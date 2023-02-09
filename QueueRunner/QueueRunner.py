@@ -2,13 +2,11 @@ import config
 import datetime
 from MIDOG2022.MIDOG2022_inference import inference as inference_MIDOG2022
 from lib.nms_WSI import non_max_suppression_by_distance
-from functools import partial
 from tqdm import tqdm
 import logging
 import time
 import numpy as np
 import os
-import sys
 
 from exact_sync.v1.configuration import Configuration
 from exact_sync.v1.api_client import ApiClient

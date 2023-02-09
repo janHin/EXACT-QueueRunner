@@ -104,14 +104,7 @@ while (True):
             
             annotationtypes = {anno_type['name']:anno_type for anno_type in manager.retrieve_annotationtypes(imageset)}
             
-            
-            annotation_types_exact={}
-            for idx,scl in enumerate(subclasses):
-                for x in list(annotationtypes.keys()):
-                    if scl in x:
-                        annotation_types_exact[idx] = annotationtypes[x]['id']
-
-            
+                        
             # The correct annotation type is required in order to be able to add the annotation
             # CAVE: The annotation type also needs to be a part of the product that you want to apply
             # the detection on.

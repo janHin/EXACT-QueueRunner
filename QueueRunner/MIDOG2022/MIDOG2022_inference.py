@@ -165,12 +165,12 @@ class RetinaNet(nn.Module):
                 [[p.size(2), p.size(3)] for p in p_states]]
     
 
-def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_thresh=0.4):
+def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_thresh=0.4, device='gpu'):
 
 
     logging.info('Loading model')
     
-    modelpath = os.path.dirname(os.path.realpath(__file__)) + os.sep + 'Mitosis/final_model_DA_3.pth'
+    modelpath = os.path.dirname(os.path.realpath(__file__)) + os.sep + 'Mitosis/model.pth'
     
     scales = [0.2, 0.4, 0.6, 0.8, 1.0]
     ratios = [1]
@@ -182,7 +182,7 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
     sizes = [(32, 32)]
     model = RetinaNet(encoder, n_classes=2, n_domains=6, n_anchors=len(scales) * len(ratios),sizes=[size[0] for size in sizes], chs=128, final_bias=-4., n_conv=3, imsize=(512,512))
     
-    model.load_state_dict(torch.load(modelpath)['model'])
+    model.load_state_dict(torch.load(modelpath, map_location=device)['model'])
     
     model = model.eval().cuda()
     

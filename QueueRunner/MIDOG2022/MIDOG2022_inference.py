@@ -165,7 +165,7 @@ class RetinaNet(nn.Module):
                 [[p.size(2), p.size(3)] for p in p_states]]
     
 
-def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_thresh=0.4, device='gpu'):
+def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_thresh=0.4, device='cuda:0'):
 
 
     logging.info('Loading model')
@@ -182,9 +182,9 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
     sizes = [(32, 32)]
     model = RetinaNet(encoder, n_classes=2, n_domains=6, n_anchors=len(scales) * len(ratios),sizes=[size[0] for size in sizes], chs=128, final_bias=-4., n_conv=3, imsize=(512,512))
     
-    model.load_state_dict(torch.load(modelpath, map_location=device)['model'])
-    
-    model = model.eval().cuda()
+    model.cpu()
+    model.load_state_dict(torch.load(modelpath))
+    model = model.eval().to(device)
     
     slideobjs=[]
     
@@ -273,7 +273,7 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
                     continue
 
                 if (torch.cuda.is_available()):
-                    device='cuda'
+                    device='cuda:0'
                     patch = patch.to(device)
                 else:
                     device='cpu'

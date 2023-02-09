@@ -1,0 +1,21 @@
+version: '3.6'
+
+services:
+  worker:
+    build: ./QueueRunner
+    command: python3 QueueRunner.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: "nvidia"
+            device_ids: ["MIG-76c373be-682c-59fe-b681-ccc7fea2c652"]
+            capabilities: [gpu]
+    volumes:
+      - ./exact-worker/:/usr/src/exact-worker/
+      - /data/services/exact/images:/images
+    ports:
+      - 8000:8000
+    env_file:
+      - ./env.dev
+

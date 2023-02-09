@@ -272,12 +272,6 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
                     patch_counter += 1
                     continue
 
-                if (torch.cuda.is_available()):
-                    device='cuda:0'
-                    patch = patch.to(device)
-                else:
-                    device='cpu'
-
                 patches.append(patch[None, :, :, :])
                 x_coordinates.append(x)
                 y_coordinates.append(y)

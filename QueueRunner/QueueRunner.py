@@ -209,7 +209,10 @@ while (True):
             os.unlink(tpath)
             processing_api.partial_update_plugin_job(id=job.id, attached_worker=None)
 
-            logging.info('Unclaimed job %d' % job.id)                
+            logging.info('Unclaimed job %d' % job.id)     
+
+            # Break for loop to achieve refreshing of jobs list
+            break          
                 
  
 

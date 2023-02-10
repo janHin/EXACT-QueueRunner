@@ -71,8 +71,13 @@ while (True):
             continue
         
         # MIDOG 2022 domain adversarial baseline
-        if (job.plugin == plugin_id_midog2022) and (job.result is None) and (((job.attached_worker and (len(job.attached_worker)==0)) or ((datetime.datetime.now()-job.updated_time).seconds>3600))):
+        if (job.plugin == plugin_id_midog2022) and (job.result is None) and (((job.attached_worker and (len(job.attached_worker)==0)) or (job.attached_worker is None) or ((datetime.datetime.now()-job.updated_time).seconds>3600))):
             update_progress = lambda progress: processing_api.partial_update_plugin_job(id=job.id,processing_complete=progress, updated_time=datetime.datetime.now())
+            image = images_api.retrieve_image(job.image)
+            if ('.mrxs' in str(image.filename).lower()):
+                logging.warning('Skipping MRXS file: '+image.filename)
+                processing_api.partial_update_plugin_job(id=job.id, attached_worker=None)
+                continue
 
             processing_api.partial_update_plugin_job(id=job.id, attached_worker=worker_name)
             # re-check if we got the job after a random time below 1 second
@@ -87,12 +92,7 @@ while (True):
                 
             logging.info('Successfully claimed job %d' % job.id)
 
-            image = images_api.retrieve_image(job.image)
 
-            if ('.mrxs' in str(image.filename).lower()):
-                logging.warning('Skipping MRXS file: '+image.filename)
-                processing_api.partial_update_plugin_job(id=job.id, attached_worker=None)
-                continue
 
             update_progress(0.01)
             

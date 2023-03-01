@@ -9,10 +9,10 @@ import torchvision.transforms as transforms
 
 from typing import Tuple, List
 
-from MIDOG2022.Mitosis.lib.helper.fastai_helpers import *
-from MIDOG2022.Mitosis.lib.helper.object_detection_helper import *
-from MIDOG2022.Mitosis.lib.object_detection_helper import *
-from MIDOG2022.Mitosis.lib.helper.nms import non_max_suppression_by_distance
+from .Mitosis.lib.helper.fastai_helpers import *
+from .Mitosis.lib.helper.object_detection_helper import *
+from .Mitosis.lib.object_detection_helper import *
+from .Mitosis.lib.helper.nms import non_max_suppression_by_distance
 from torchvision.models.resnet import resnet18
 
 from fastai.vision.learner import create_body

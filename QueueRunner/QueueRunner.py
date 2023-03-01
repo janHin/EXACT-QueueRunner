@@ -46,26 +46,10 @@ for finder, name, ispkg in sorted(iter_namespace(handlers)):
         print('+++ Unable to active plugin: '+name,e)
         pass
 
-plugin_id_midog2022 = None
-
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 plugins_exact = {plugin.package: plugin for plugin in processing_api.list_plugins().results}
-# Find the plugin entry on EXACT
-for plugin in processing_api.list_plugins().results:
-    if plugin.package == 'science.imig.midog2022.baseline-da':
-        plugin_id_midog2022=plugin.id
 
-# or create it, if not found
-if plugin_id_midog2022 is None:
-    plugin_id_midog2022 = processing_api.create_plugin(name='MIDOG 2022 Mitosis Domain Adversarial Baseline',
-                          author='Frauke Wilm / Marc Aubreville', 
-                          package='science.imig.midog2022.baseline-da', 
-                          contact='marc.aubreville@thi.de', 
-                          abouturl='https://github.com/DeepPathology/EXACT-QueueRunner/', 
-                          icon='MIDOG2022/midog_2022_logo.png',
-                          products=[],
-                          results=[]).id
                 
 import socket
 import string
@@ -78,7 +62,6 @@ worker_name = str(socket.gethostname()+'_'+''.join(random.choice(string.ascii_up
 
 
 logging.info('This is worker: '+worker_name)
-logging.info(f'I am responsible for server plugin: {plugin_id_midog2022}')
 
 apis = {
     'images': images_api,

@@ -80,7 +80,7 @@ while (True):
         
         for k in plugins:
             plugin = plugins[k].plugin
-            # MIDOG 2022 domain adversarial baseline
+
             if (job.plugin == plugins_exact[plugin['package']].id) and (job.result is None) and ((job.attached_worker is None) or (len(job.attached_worker)==0) or ((datetime.datetime.now()-job.updated_time).seconds>3600)):
                 update_progress = lambda progress: processing_api.partial_update_plugin_job(id=job.id,processing_complete=progress, updated_time=datetime.datetime.now())
 
@@ -96,9 +96,11 @@ while (True):
 
                 logging.info('Successfully claimed job %d' % job.id)
 
-                plugin['inference_func'](apis=apis, job=job, update_progress=update_progress)
+                success = plugin['inference_func'](apis=apis, job=job, update_progress=update_progress)
                     
-                update_progress(100.0)
+                if success:
+                    update_progress(100.0)
+
                 apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=None)
 
                 logging.info('Unclaimed job %d' % job.id)     

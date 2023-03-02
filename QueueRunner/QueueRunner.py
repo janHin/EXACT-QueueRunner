@@ -100,11 +100,12 @@ while (True):
         for k in plugins:
             plugin = plugins[k].plugin
 
-            if (job.plugin == plugins_exact[plugin['package']].id) and (job.result is None) and ((job.attached_worker is None) or (len(job.attached_worker)==0) or ((datetime.datetime.now()-job.updated_time).seconds>7200)):
-                logging.info('Last update for this job was: '+str((datetime.datetime.now()-job.updated_time).seconds)+' seconds ago.')
-                logging.info('Attached worker info: '+str(job.attached_worker))
+            if (job.plugin == plugins_exact[plugin['package']].id) and (job.result is None) and ((job.attached_worker is None) or (len(job.attached_worker)==0)):
+                logging.info(f'JOB {job.id}: Last update for this job was: '+str((datetime.datetime.now()-job.updated_time).seconds)+' seconds ago.')
+                logging.info(f'JOB {job.id}: Attached worker info: '+str(job.attached_worker))
                 update_progress = lambda progress: processing_api.partial_update_plugin_job(id=job.id,processing_complete=progress, updated_time=datetime.datetime.now())
 
+                logging.info(f'JOB {job.id}: Claiming job.')
                 apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=worker_name, updated_time=datetime.datetime.now())
                 # re-check if we got the job after a random time below 1 second
                 time.sleep(random.random())
@@ -114,6 +115,7 @@ while (True):
                 if (newjob.attached_worker != worker_name):
                     logging.info('There was a conflict. Worker '+newjob.attached_worker+' got the job finally')
                     continue
+                logging.info('Claiming was: '+str((datetime.datetime.now()-job.updated_time).seconds)+' seconds ago.')
 
                 logging.info('Successfully claimed job %d' % job.id)
 

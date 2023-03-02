@@ -81,7 +81,9 @@ while (True):
         for k in plugins:
             plugin = plugins[k].plugin
 
-            if (job.plugin == plugins_exact[plugin['package']].id) and (job.result is None) and ((job.attached_worker is None) or (len(job.attached_worker)==0) or ((datetime.datetime.now()-job.updated_time).seconds>3600)):
+            if (job.plugin == plugins_exact[plugin['package']].id) and (job.result is None) and ((job.attached_worker is None) or (len(job.attached_worker)==0) or ((datetime.datetime.now()-job.updated_time).seconds>7200)):
+                logging.info('Last update for this job was: '+str((datetime.datetime.now()-job.updated_time).seconds)+' seconds ago.')
+                logging.info('Attached worker info: '+str(job.attached_worker))
                 update_progress = lambda progress: processing_api.partial_update_plugin_job(id=job.id,processing_complete=progress, updated_time=datetime.datetime.now())
 
                 apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=worker_name)

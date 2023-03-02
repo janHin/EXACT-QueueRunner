@@ -29,6 +29,8 @@ import pkgutil
 import importlib
 import handlers as handlers
 
+time.sleep(np.random.randint(5))
+
 def iter_namespace(ns_pkg):
     # Specifying the second argument (prefix) to iter_modules makes the
     # returned name an absolute name instead of a relative one. This allows
@@ -69,15 +71,32 @@ apis = {
     'manager' : manager
 }
 
+
+# Look if all plugins are already registered.
+for k in plugins:
+    plugin = plugins[k].plugin
+
+    if (plugin['package'] not in plugins_exact):
+        # Missing plugin on EXACT, let's register it.
+        plugin_entries = {k:v for k,v in zip(plugin.keys(),plugin.values()) if k != 'inference_func'}
+
+        processing_api.create_plugin(**plugin_entries)
+
+        plugins_exact = {plugin.package: plugin for plugin in processing_api.list_plugins().results}
+
+
 while (True):
     jobs=processing_api.list_plugin_jobs(limit=100000000).results
     logging.info('Job queue contains '+str(len(jobs))+' jobs')
     for job in jobs:
-        
+
         # Only work on jobs that are not already completed
         if (job.processing_complete==100):
             continue
-        
+
+        # Get update about job
+        job = apis['processing'].retrieve_plugin_job(id=job.id)
+
         for k in plugins:
             plugin = plugins[k].plugin
 
@@ -86,7 +105,7 @@ while (True):
                 logging.info('Attached worker info: '+str(job.attached_worker))
                 update_progress = lambda progress: processing_api.partial_update_plugin_job(id=job.id,processing_complete=progress, updated_time=datetime.datetime.now())
 
-                apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=worker_name)
+                apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=worker_name, updated_time=datetime.datetime.now())
                 # re-check if we got the job after a random time below 1 second
                 time.sleep(random.random())
                 

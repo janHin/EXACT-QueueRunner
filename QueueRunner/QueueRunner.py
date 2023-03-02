@@ -95,7 +95,11 @@ while (True):
             continue
 
         # Get update about job
-        job = apis['processing'].retrieve_plugin_job(id=job.id)
+        try:
+            job = apis['processing'].retrieve_plugin_job(id=job.id)
+        except:
+            logging.warning('Job unexpectedly removed from queue: '+str(job.id))
+            continue
 
         for k in plugins:
             plugin = plugins[k].plugin

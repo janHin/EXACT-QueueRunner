@@ -119,6 +119,9 @@ while (True):
                 if (newjob.attached_worker != worker_name):
                     logging.info('There was a conflict. Worker '+newjob.attached_worker+' got the job finally')
                     continue
+            
+                job = newjob
+                
                 logging.info('Claiming was: '+str((datetime.datetime.now()-job.updated_time).seconds)+' seconds ago.')
 
                 logging.info('Successfully claimed job %d' % job.id)

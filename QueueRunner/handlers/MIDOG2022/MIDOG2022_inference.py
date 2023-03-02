@@ -260,6 +260,10 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
                 step_ds = int(np.ceil(float(shape)/ds))
                 needCalculation = np.sum(activeMap[y_ds:y_ds+step_ds,x_ds:x_ds+step_ds])>0.9*step_ds*step_ds
 
+                if not needCalculation:
+                    patch_counter += 1
+                    continue
+
                 
                 patch = np.array(slide.read_region(location=(int(x), int(y)),
                                                         level=level, size=(shape, shape)))[:, :, :3]
@@ -268,10 +272,6 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
                 patch = transforms.Normalize(mean, std)(patch)
                 
                 
-                if not needCalculation:
-                    patch_counter += 1
-                    continue
-
                 patches.append(patch[None, :, :, :])
                 x_coordinates.append(x)
                 y_coordinates.append(y)

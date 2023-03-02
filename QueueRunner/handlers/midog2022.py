@@ -4,6 +4,7 @@ import logging
 from typing import Callable
 import time
 import os
+import numpy as np
 from tqdm import tqdm
 
 update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
@@ -77,6 +78,11 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             stage1_results = non_max_suppression_by_distance(boxes=boxes, scores=scores, center_x=center_x, center_y=center_y).tolist()
             logging.info('NMS reduced stage1 results by %.2f percent.',  100*(1-(float(len(stage1_results))/boxes.shape[0])))
         except Exception as e:
+            error_message = 'Error: '+str(type(e))+' while NMS.'
+            error_detail = str(e)
+            logging.error(str(e))
+            
+            apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
             return False
             
 

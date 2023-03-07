@@ -132,6 +132,8 @@ def main():
                             
                         if success:
                             update_progress(100.0)
+                            apis['processing'].partial_update_plugin_job(id=job.id, error_message=None, error_detail=None)
+
 
                         apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=None)
 

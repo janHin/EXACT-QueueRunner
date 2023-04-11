@@ -304,7 +304,7 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.55, nms_
 
 
             modelOutput = process_output(clas_pred.cpu(), bbox_pred.cpu(),
-                                                    anchors, detect_thresh=stage1_threshold)
+                                                    anchors, detect_thresh=0.4)
 
             bbox_pred, scores, preds = [modelOutput[x] for x in ['bbox_pred', 'scores', 'preds']]
             if bbox_pred is not None:

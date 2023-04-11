@@ -27,7 +27,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
 
  
         logging.info('Checking annotation type availability for job %d' % job.id)
-        annotationtypes = {anno_type['name']:anno_type for anno_type in apis['manager'].retrieve_annotationtypes(imageset)}
+        annotationtypes = {anno_type['name']:anno_type for anno_type in apis['annotations_api'].retrieve_annotationtypes(imageset)}
         
                     
         # The correct annotation type is required in order to be able to add the annotation
@@ -103,7 +103,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             
             # Create result entry for result
             # Each plugin result can contain collection of annotations. 
-            resultentry = PluginResultEntry(pluginresult=result.id, name='Mitotic Figures', annotation_results = [], bitmap_results=[])
+            resultentry = PluginResultEntry(pluginresult=result.id, name='Mitotic Figures', annotation_results = [], bitmap_results=[], default_threshold=0.55)
             resultentry = apis['processing'].create_plugin_result_entry(body=resultentry)
 
 
@@ -117,9 +117,8 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
 
 
                 vector = {"x1": predcoords[0], "y1": predcoords[1], "x2": predcoords[2], "y2": predcoords[3]}
-                meta_data = f'score={score:.2f}'
 
-                anno = PluginResultAnnotation(annotation_type=annoclass['id'], pluginresultentry=resultentry.id, image=image.id, vector=vector)
+                anno = PluginResultAnnotation(annotation_type=annoclass['id'], pluginresultentry=resultentry.id, image=image.id, vector=vector, score=score)
                 anno = apis['processing'].create_plugin_result_annotation(body=anno)
                     
         except Exception as e:

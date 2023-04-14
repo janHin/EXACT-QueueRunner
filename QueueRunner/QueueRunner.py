@@ -90,10 +90,11 @@ def main():
         while (True):
             jobs=processing_api.list_plugin_jobs(limit=100000000).results
             logging.info('Job queue contains '+str(len(jobs))+' jobs')
+
             for job in jobs:
 
-                # Only work on jobs that are not already completed
-                if (job.processing_complete==100):
+                # Only work on jobs that are not already completed or failed with an error
+                if (job.processing_complete==100) or (job.error_message):
                     continue
 
                 # Get update about job

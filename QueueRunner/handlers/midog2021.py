@@ -60,7 +60,9 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
                         zip_ref.extractall('tmp/')
                         for f in zip_ref.filelist:
                             unlinklist.append('tmp/'+f.orig_filename)
-                            
+
+                    # Original target path is MRXS file
+                    tpath = 'tmp/'+image.filename                            
                         
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while downloading'

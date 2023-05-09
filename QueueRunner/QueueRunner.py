@@ -94,7 +94,7 @@ def main():
             for job in jobs:
 
                 # Only work on jobs that are not already completed or failed with an error
-                if (job.processing_complete==100) or (job.error_message):
+                if (job.processing_complete==100):
                     continue
 
                 # Get update about job
@@ -102,6 +102,9 @@ def main():
                     job = apis['processing'].retrieve_plugin_job(id=job.id)
                 except:
                     logging.warning('Job unexpectedly removed from queue: '+str(job.id))
+                    continue
+
+                if job.error_message:
                     continue
 
                 for k in plugins:

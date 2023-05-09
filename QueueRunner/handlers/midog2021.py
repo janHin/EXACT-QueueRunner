@@ -60,7 +60,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
                         zip_ref.extractall('tmp/')
                         for f in zip_ref.filelist:
                             unlinklist.append('tmp/'+f.orig_filename)
-
+                        unlinklist.append(tpath)
                     # Original target path is MRXS file
                     tpath = 'tmp/'+image.filename                            
                         
@@ -161,10 +161,13 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
             return False
         
+        try:
+            os.unlink(tpath)
+            for f in unlinklist:
+                os.unlink(f)
         
-        os.unlink(tpath)
-        for f in unlinklist:
-            os.unlink(f)
+        except Exception as e:
+            logging.error('Error while deleting files: '+str(e)+'. Continuing anyway.')
         
         return True
 

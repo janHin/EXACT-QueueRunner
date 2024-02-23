@@ -46,7 +46,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         
 
         try:
-            tpath = 'tmp/'+image.filename
+            tpath = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', image.filename)
 
             if not os.path.exists(tpath):
                 if ('.mrxs' in str(image.filename).lower()):
@@ -62,7 +62,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
                             unlinklist.append('tmp/'+f.orig_filename)
                         unlinklist.append(tpath)
                     # Original target path is MRXS file
-                    tpath = 'tmp/'+image.filename                            
+                    tpath = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', image.filename)
                         
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while downloading'
@@ -177,7 +177,7 @@ plugin = {  'name':'MIDOG 2021 baseline / 0.4 threshold',
             'package':'science.imig.midog2021.baseline-da-lowthr', 
             'contact':'marc.aubreville@thi.de', 
             'abouturl':'https://github.com/DeepPathology/MIDOG_reference_docker', 
-            'icon':'handlers/MIDOG2021/midog_2021_logo.jpg',
+            'icon':'QueueRunner/handlers/MIDOG2021/midog_2021_logo.jpg',
             'products':[],
             'results':[],
             'inference_func' : inference}

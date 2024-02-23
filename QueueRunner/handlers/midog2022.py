@@ -139,7 +139,7 @@ plugin = {  'name':'MIDOG 2022 Mitosis Domain Adversarial Baseline',
             'package':'science.imig.midog2022.baseline-da', 
             'contact':'marc.aubreville@thi.de', 
             'abouturl':'https://github.com/DeepPathology/EXACT-QueueRunner/', 
-            'icon':'handlers/MIDOG2022/midog_2022_logo.png',
+            'icon':'QueueRunner/handlers/MIDOG2022/midog_2022_logo.png',
             'products':[],
             'results':[],
             'inference_func' : inference}

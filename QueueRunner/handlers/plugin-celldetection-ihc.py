@@ -1,4 +1,4 @@
-from .Cells.Cells_inference import inference as inference_cells
+from .Lymphocytes.lymphocyte_inference import inference as inference_lymphocytes
 from lib.nms_WSI import non_max_suppression_by_distance
 import logging
 from typing import Callable
@@ -35,12 +35,9 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         annoclasses={}
         match_dict = ['IMMUNE CELL', 'NON-TUMOR CELL', 'TUMOR CELL']
         for t in annotationtypes:
-            if 'NON-TUMOR CELL' in t.upper():
-                annoclasses['NON-TUMOR CELL'] = annotationtypes[t]
-            elif 'IMMUNE CELL' in t.upper():
-                annoclasses['IMMUNE CELL'] = annotationtypes[t]
-            elif 'TUMOR CELL' in t.upper():
-                annoclasses['TUMOR CELL'] = annotationtypes[t]
+            for label_class in match_dict:
+                if label_class in t.upper():
+                    annoclasses[label_class] = annotationtypes[t]
         
         if (len(annoclasses.keys()) != 3):
             missing = list(set(match_dict) - set(annoclasses.keys()))
@@ -79,7 +76,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
 
         try:
             logging.info('Stage 1 for job %d' % job.id)
-            stage1_results = inference_cells(tpath, update_progress=update_progress)
+            stage1_results = inference_lymphocytes(tpath, update_progress=update_progress)
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while processing stage 1'
             error_detail = str(e)
@@ -95,8 +92,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
                 center_x = boxes[:, 0] + (boxes[:, 2] - boxes[:, 0]) / 2
                 center_y = boxes[:, 1] + (boxes[:, 3] - boxes[:, 1]) / 2  
                 scores = boxes[:,4]
-                # TODO adapt NMS radius
-                stage1_results = non_max_suppression_by_distance(boxes=boxes, scores=scores, center_x=center_x, center_y=center_y).tolist()
+                stage1_results = non_max_suppression_by_distance(boxes=boxes, scores=scores, radius = 10, center_x=center_x, center_y=center_y).tolist()
                 logging.info('NMS reduced stage1 results by %.2f percent.',  100*(1-(float(len(stage1_results))/boxes.shape[0])))
 
         except Exception as e:
@@ -158,7 +154,6 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
 
                 vector = {"x1": predcoords[0], "y1": predcoords[1], "x2": predcoords[2], "y2": predcoords[3]}
 
-                #TODO change anno types
                 anno = PluginResultAnnotation(annotation_type=annoclasses[pred_class]['id'], pluginresultentry=resultentry.id, image=image.id, vector=vector, score=line[4])
                 anno = apis['processing'].create_plugin_result_annotation(body=anno, async_req=True)
                     
@@ -180,13 +175,12 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         
         return True
 
-# TODO change url
 plugin = {  'name':'Cell Detection',
             'author':'Frauke Wilm', 
             'package':'science.imig.cell-det', 
             'contact':'frauke.wilm@fau.de', 
-            'abouturl':'https://git5.cs.fau.de/wilm/merck-immune-marker-detection', 
-            'icon':'QueueRunner/handlers/Cells/cells.png',
+            'abouturl':'https://github.com/DeepMicroscopy/CD3-LymphocyteDetection', 
+            'icon':'QueueRunner/handlers/Lymphocytes/cells.png',
             'products':[],
             'results':[],
             'inference_func' : inference}

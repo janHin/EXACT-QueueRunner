@@ -14,7 +14,6 @@ from fastai.vision import *
 from torchvision.models.resnet import resnet18
 from fastai.vision.learner import create_body
 from fastai.vision import models
-#from .object_detection_fastai.helper.object_detection_helper import *
 from .object_detection_fastai.models.RetinaNet import RetinaNet
 from .object_detection_fastai.helper.object_detection_helper import *
 
@@ -28,6 +27,7 @@ from torchvision import transforms, utils
 from torch import Tensor
 import numpy as np
 import torch
+
 def pil2tensor(image:Union[np.ndarray,np.ndarray],dtype:np.dtype)->Tensor:
     "Convert PIL style `image` array to torch style image tensor."
     a = np.asarray(image)
@@ -127,22 +127,21 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_
     annos_original=[]
     level=0
     # TODO change interval
-    #x_steps = range(0, int(slide.level_dimensions[0][0]),
-    #                int(shape * down_factor * overlap))
-    #y_steps = range(0, int(slide.level_dimensions[0][1]),
-    #                int(shape * down_factor * overlap))
-
-    xmin = int(slide.level_dimensions[0][0]//2)
-    ymin = int(slide.level_dimensions[0][1]//2)
-    x_steps = range(xmin, xmin+5000,
-                int(shape * down_factor * overlap))
-    y_steps = range(ymin, ymin+5000,
+    x_steps = range(0, int(slide.level_dimensions[0][0]),
                     int(shape * down_factor * overlap))
+    y_steps = range(0, int(slide.level_dimensions[0][1]),
+                    int(shape * down_factor * overlap))
+
+    #xmin = int(slide.level_dimensions[0][0]//2)
+    #ymin = int(slide.level_dimensions[0][1]//2)
+    #x_steps = range(xmin, xmin+5000,
+    #            int(shape * down_factor * overlap))
+    #y_steps = range(ymin, ymin+5000,
+    #                int(shape * down_factor * overlap))
     
     patches = []
     x_coordinates = []
     y_coordinates = []
-    batch_size=4
     patch_counter = 0
     class_pred_batch, bbox_pred_batch = [], []
     overlay = np.zeros(np.array(overview).shape, np.uint8)[:,:,0:3]
@@ -156,7 +155,6 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_
         for x in x_steps:
             x_ds = int(np.floor(float(x)/ds))
             y_ds = int(np.floor(float(y)/ds))
-            step_ds = int(np.ceil(float(shape)/ds))
             needCalculation = np.sum(activeMap[y_ds:y_ds+step_ds,x_ds:x_ds+step_ds])>0.9*step_ds*step_ds
             if (needCalculation):
                 coordlist.append([x,y])

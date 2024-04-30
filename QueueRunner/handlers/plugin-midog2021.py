@@ -1,4 +1,4 @@
-from .MIDOG2021.MIDOG2021_inference import inference as inference_MIDOG2021
+from .MIDOG2021.midog2021_inference import inference as inference_midog2021
 from lib.nms_WSI import non_max_suppression_by_distance
 import logging
 from typing import Callable
@@ -73,7 +73,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
 
         try:
             logging.info('Stage 1 for job %d' % job.id)
-            stage1_results = inference_MIDOG2021(tpath, update_progress=update_progress)
+            stage1_results = inference_midog2021(tpath, update_progress=update_progress)
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while processing stage 1'
             error_detail = str(e)
@@ -177,7 +177,7 @@ plugin = {  'name':'MIDOG 2021 baseline / 0.4 threshold',
             'package':'science.imig.midog2021.baseline-da-lowthr', 
             'contact':'marc.aubreville@thi.de', 
             'abouturl':'https://github.com/DeepPathology/MIDOG_reference_docker', 
-            'icon':'QueueRunner/handlers/MIDOG2021/midog_2021_logo.jpg',
+            'icon':'QueueRunner/handlers/MIDOG2021/midog2021_logo.jpg',
             'products':[],
             'results':[],
             'inference_func' : inference}

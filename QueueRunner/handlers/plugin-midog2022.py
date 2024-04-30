@@ -1,4 +1,4 @@
-from .MIDOG2022.MIDOG2022_inference import inference as inference_MIDOG2022
+from .MIDOG2022.midog2022_inference import inference as inference_midog2022
 from lib.nms_WSI import non_max_suppression_by_distance
 import logging
 from typing import Callable
@@ -60,7 +60,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
 
         try:
             logging.info('Stage 1 for job %d' % job.id)
-            stage1_results = inference_MIDOG2022(tpath, update_progress=update_progress)
+            stage1_results = inference_midog2022(tpath, update_progress=update_progress)
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while processing stage 1'
             error_detail = str(e)
@@ -139,7 +139,7 @@ plugin = {  'name':'MIDOG 2022 Mitosis Domain Adversarial Baseline',
             'package':'science.imig.midog2022.baseline-da', 
             'contact':'marc.aubreville@thi.de', 
             'abouturl':'https://github.com/DeepPathology/EXACT-QueueRunner/', 
-            'icon':'QueueRunner/handlers/MIDOG2022/midog_2022_logo.png',
+            'icon':'QueueRunner/handlers/MIDOG2022/midog2022_logo.png',
             'products':[],
             'results':[],
             'inference_func' : inference}

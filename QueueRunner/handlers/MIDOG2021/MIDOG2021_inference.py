@@ -43,16 +43,7 @@ import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 class InferenceDataset(Dataset):
-    """Face Landmarks dataset."""
-
     def __init__(self, slide, level, coordlist, mean = torch.FloatTensor([0.7481, 0.5692, 0.7225]), std = torch.FloatTensor([0.1759, 0.2284, 0.1792])):
-        """
-        Arguments:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
         self.coordlist = coordlist
         self.slide = slide
         self.level = level
@@ -225,7 +216,7 @@ class RetinaNet(nn.Module):
                 [[p.size(2), p.size(3)] for p in p_states]]
     
 
-def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_thresh=0.5, device='cuda:0'):
+def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_thresh=0.5, device='mps'):
 
 
     logging.info('Loading model')
@@ -323,7 +314,7 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_
     
     time_reading=0
     time_processing=0
-    dl = DataLoader(ds, num_workers=4, batch_size=8)
+    dl = DataLoader(ds, num_workers=0, batch_size=8)
     i=0
     t0=time.time()
     with torch.inference_mode():
@@ -344,6 +335,7 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_
             y_coordinates.extend(y)
             time_processing += time.time()-t0
             t0=time.time()
+            patch_counter += 1
 
 
         logging.info(f'Ran inference for {patch_counter} patches.')

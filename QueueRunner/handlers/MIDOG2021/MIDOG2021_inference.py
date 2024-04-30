@@ -216,7 +216,7 @@ class RetinaNet(nn.Module):
                 [[p.size(2), p.size(3)] for p in p_states]]
     
 
-def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_thresh=0.5, device='mps'):
+def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_thresh=0.5, device='cuda:0'):
 
 
     logging.info('Loading model')
@@ -314,7 +314,7 @@ def inference(fname, update_progress:Callable, stage1_threshold:float=0.64, nms_
     
     time_reading=0
     time_processing=0
-    dl = DataLoader(ds, num_workers=0, batch_size=8)
+    dl = DataLoader(ds, num_workers=4, batch_size=8)
     i=0
     t0=time.time()
     with torch.inference_mode():

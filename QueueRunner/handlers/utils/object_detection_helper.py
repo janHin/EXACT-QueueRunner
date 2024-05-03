@@ -1,9 +1,9 @@
-import numpy as np
-from fastai import *
+import matplotlib.pyplot as plt
 from fastai.vision import *
+from fastai import *
+import numpy as np
 import torch
 import math
-import matplotlib.pyplot as plt
 
 def range_of(x):
     "Create a range from 0 to `len(x)`."
@@ -146,7 +146,7 @@ def process_output(clas_pred, bbox_pred, anchors, detect_thresh=0.25):
     clas_pred = torch.sigmoid(clas_pred)
 
     detect_mask = clas_pred.max(1)[0] > detect_thresh
-    if np.array(detect_mask.cpu()).max() == 0:
+    if np.array(detect_mask).max() == 0:
         return None, None, None
 
     bbox_pred, clas_pred = bbox_pred[detect_mask], clas_pred[detect_mask]

@@ -1,10 +1,13 @@
-from fastai import *
-from fastai.vision import *
-import torch
-import torch.nn as nn
-from ..helper.fastai_helpers import *
 from fastai.callback.hook import Hooks, hook_outputs
+import torch.nn.functional as F
+from ..fastai_helpers import *
 from typing import Tuple, List
+from fastai.vision import *
+from torch import Tensor
+import torch.nn as nn
+from fastai import *
+import torch
+
 
 
 # export
@@ -19,24 +22,20 @@ class LateralUpsampleMerge(nn.Module):
         return self.conv_lat(self.hook.stored) + F.interpolate(x, scale_factor=2)
     
 
-
-
 class RetinaNet(nn.Module):
     "Implements RetinaNet from https://arxiv.org/abs/1708.02002"
-
     def __init__(self, encoder: nn.Module, n_classes, final_bias:float=0.,  n_conv:float=4,
-                 chs=256, n_anchors=9, flatten=True, sizes=None):
+                 chs=256, n_anchors=9, flatten=True, sizes=None, imsize=(256,256)):
         super().__init__()
         self.n_classes, self.flatten = n_classes, flatten
-        imsize = (256, 256)
         self.sizes = sizes
-        sfs_szs, x, hooks = self._model_sizes(encoder, size=imsize)
+        self.sfs_szs, x, hooks = self._model_sizes(encoder, size=imsize)
         self.encoder = encoder
-        self.c5top5 = conv2d(sfs_szs[-1][1], chs, ks=1, bias=True)
-        self.c5top6 = conv2d(sfs_szs[-1][1], chs, stride=2, bias=True)
+        self.c5top5 = conv2d(self.sfs_szs[-1][1], chs, ks=1, bias=True)
+        self.c5top6 = conv2d(self.sfs_szs[-1][1], chs, stride=2, bias=True)
         self.p6top7 = nn.Sequential(nn.ReLU(), conv2d(chs, chs, stride=2, bias=True))
         self.merges = nn.ModuleList([LateralUpsampleMerge(chs, szs[1], hook)
-                                     for szs, hook in zip(sfs_szs[-2:-4:-1], hooks[-2:-4:-1])])
+                                     for szs, hook in zip(self.sfs_szs[-2:-4:-1], hooks[-2:-4:-1])])
         self.smoothers = nn.ModuleList([conv2d(chs, chs, 3, bias=True) for _ in range(3)])
         self.classifier = self._head_subnet(n_classes, n_anchors, final_bias, chs=chs, n_conv=n_conv)
         self.box_regressor = self._head_subnet(4, n_anchors, 0., chs=chs, n_conv=n_conv)
@@ -85,4 +84,71 @@ class RetinaNet(nn.Module):
             p_states = [p_state for p_state in p_states if p_state.size()[-1] in self.sizes]
         return [self._apply_transpose(self.classifier, p_states, self.n_classes),
                 self._apply_transpose(self.box_regressor, p_states, 4),
+                [[p.size(2), p.size(3)] for p in p_states]]
+    
+# Gradient Reverse Layer
+class GradReverse(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+        return output, None
+    
+    
+class Discriminator(nn.Module):
+    def __init__(self, size, n_domains, alpha=1.0):
+        super(Discriminator, self).__init__()
+        self.alpha = alpha
+        self.reducer = nn.Sequential(
+            nn.Conv2d(size, size, kernel_size = (3, 3), bias=False),
+            nn.BatchNorm2d(size),
+            nn.ReLU(inplace = True),
+            nn.Dropout(),
+            nn.Conv2d(size, size//2, kernel_size = (3, 3), bias=False),
+            nn.BatchNorm2d(size//2),
+            nn.ReLU(inplace = True),
+            nn.Dropout(),
+            nn.Conv2d(size//2, size//4, kernel_size = (3, 3), bias=False),
+            nn.BatchNorm2d(size//4),
+            nn.ReLU(inplace = True),
+            nn.Dropout(),
+            nn.AdaptiveAvgPool2d((1, 1)),
+        )
+        self.reducer2 = nn.Linear(size//4, n_domains, bias = False)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.normal_(m.weight, mean=0.0, std=0.01)
+
+    def forward(self, x):
+        x = GradReverse.apply(x, self.alpha)
+        x = self.reducer(x)
+        x = torch.flatten(x,1)
+        x = self.reducer2(x)
+        return x
+    
+class RetinaNetDA(RetinaNet):
+    def __init__(self, encoder: nn.Module, n_classes, final_bias: float = 0, n_conv: float = 4, chs=256, n_anchors=9, flatten=True, sizes=None, imsize=(256, 256), n_domains=1):
+        super().__init__(encoder, n_classes, final_bias, n_conv, chs, n_anchors, flatten, sizes, imsize)
+        self.n_domains = n_domains
+        self.discriminator = Discriminator(self.sfs_szs[-1][1], n_domains)
+
+    def forward(self, x):
+        c5 = self.encoder(x)
+        p_states = [self.c5top5(c5.clone()), self.c5top6(c5)]
+        p_states.append(self.p6top7(p_states[-1]))
+        for merge in self.merges:
+            p_states = [merge(p_states[0])] + p_states
+        for i, smooth in enumerate(self.smoothers[:3]):
+            p_states[i] = smooth(p_states[i])
+        if self.sizes is not None:
+            p_states = [p_state for p_state in p_states if p_state.size()[-1] in self.sizes]
+        domain = self.discriminator(c5)
+        return [self._apply_transpose(self.classifier, p_states, self.n_classes),
+                self._apply_transpose(self.box_regressor, p_states, 4),
+                domain,
                 [[p.size(2), p.size(3)] for p in p_states]]

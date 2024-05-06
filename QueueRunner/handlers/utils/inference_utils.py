@@ -2,13 +2,16 @@ from torch.utils.data import Dataset, DataLoader
 from ..utils.object_detection_helper import *
 from typing import Callable, Union
 from torchvision import transforms
+from pathlib import Path
 import numpy as np
 import openslide
 import logging
+import pyvips
 import torch
 import time
 import cv2
 import gc
+import os
 
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -97,19 +100,20 @@ class Inference:
             activeMap = np.ones((int(self.slide.dimensions[1]/self.ds_map),int(self.slide.dimensions[0]/self.ds_map)))
         return activeMap
     
-    def get_coordlist(self, activeMap, overlap=0.9):
+    def get_coordlist(self, activeMap, overlap=0.2):
         coordlist = []
+        self.overlap = overlap
         step_ds = int(np.ceil(float(self.patch_size)/self.ds_map))
         x_steps = range(0, int(self.slide.level_dimensions[0][0]),
-                        int(self.patch_size * self.down_factor * overlap))
+                        int(self.patch_size * self.down_factor * (1 - overlap)))
         y_steps = range(0, int(self.slide.level_dimensions[0][1]),
-                        int(self.patch_size * self.down_factor * overlap))
+                        int(self.patch_size * self.down_factor * (1 - overlap)))
         for y in y_steps:
             for x in x_steps:
                 x_ds = int(np.floor(float(x)/self.ds_map))
                 y_ds = int(np.floor(float(y)/self.ds_map))
                 step_ds = int(np.ceil(float(self.patch_size)/self.ds_map))
-                needCalculation = np.sum(activeMap[y_ds:y_ds+step_ds,x_ds:x_ds+step_ds])>0.9*step_ds*step_ds
+                needCalculation = np.sum(activeMap[y_ds:y_ds+step_ds,x_ds:x_ds+step_ds])>0.5*step_ds*step_ds
                 if (needCalculation):
                     coordlist.append([x,y])
         logging.info('Running inference on:'+str(self.device))
@@ -135,7 +139,10 @@ class Inference:
                     logging.info('Time for reading: %.2f seconds, time for processing: %.2f seconds' % (time_reading,time_processing))
                 t0=time.time()
                 mdlout = self.model(patches.to(self.device))
-                prediction.extend(zip(*mdlout[:self.outputs]))
+                if type(mdlout) is tuple:
+                    prediction.extend(zip(*mdlout[:self.outputs]))
+                else:    
+                    prediction.extend(mdlout)
                 x_coordinates.extend(x)
                 y_coordinates.extend(y)
                 time_processing += time.time()-t0
@@ -191,4 +198,65 @@ class DetectionInference(Inference):
 
                 annos.append([x1, y1, x2, y2, float(score), int(pred)])
         return annos
+    
+
+class SegmentationInference(Inference):
+    def __init__(self, hdf5_file, **kwargs):
+        super().__init__(**kwargs)
+        self.outputs = 1
+        self.hdf5_file = hdf5_file
+
+    def get_activeMap(self):
+        # Perform inference on all patches
+        downsamples_int = [int(x) for x in self.slide.level_downsamples]
+        self.ds_map = 32 if 32 in downsamples_int else 16
+        activeMap = np.ones((int(self.slide.dimensions[1]/self.ds_map),int(self.slide.dimensions[0]/self.ds_map)))
+        return activeMap
+
+    def postprocess(self, predictions, x_coordinates, y_coordinates):
+        if "openslide.bounds-width" in list(self.slide.properties.keys()):
+            new_dimensions = ((int(self.slide.properties["openslide.bounds-width"]) + int(self.slide.properties["openslide.bounds-x"])),
+                            (int(self.slide.properties["openslide.bounds-height"]) + int(self.slide.properties["openslide.bounds-y"])))
+        else: new_dimensions = self.slide.dimensions
+        shape = [int(nd/self.slide.level_downsamples[self.level]) for nd in new_dimensions]
+        segmentation_results = self.hdf5_file.create_dataset("segmentation", (shape[1], shape[0]), dtype='uint8', compression="gzip")
+        counter = 0
+        for idx, (pred, x, y) in enumerate(zip(predictions, x_coordinates, y_coordinates)):
+            if (idx%100 == 0):
+                self.update_progress(counter/len(predictions)*10+80)
+            x_ds, y_ds = x//self.down_factor, y//self.down_factor
+            height, width = segmentation_results[int(y_ds):int(y_ds + self.patch_size),int(x_ds):int(x_ds + self.patch_size)].shape
+            probas, labels = pred.max(dim=0)
+            segmentation_results[int(y_ds):int(y_ds + height),int(x_ds):int(x_ds + width)] = labels[:height, :width].cpu()
+            counter += 1
+        return None
+    
+    def get_annotations(self, predictions):
+        outputs = []
+        for n, key in enumerate(list(self.hdf5_file.keys())):
+            data = self.hdf5_file[key]
+            ndarray_data = np.array(data)
+            scaled_image_data = (ndarray_data * (255 / len(np.unique(ndarray_data)))).astype(np.uint8)
+
+
+            # Define a color mapping for each integer value
+            color_map = {
+                0: (0, 0, 0, 255),    # Black
+                1: (255, 0, 0, 255),  # Red
+                2: (0, 255, 0, 255),  # Green
+                3: (0, 0, 255, 255),  # Blue
+                4: (255, 255, 0, 255),  # Yellow
+                5: (255, 255, 255, 255)  # White
+            }
+
+            #colored_image = cv2.applyColorMap(ndarray_data.astype(np.uint8), colormap=color_map)
+            colored_image = cv2.applyColorMap(scaled_image_data, cv2.COLORMAP_VIRIDIS)
+            vi = pyvips.Image.new_from_array(colored_image)
+            mask_path = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', "{}_{}.tiff".format(Path(self.slide._filename).stem, key))
+            outputs.append(mask_path)
+            vi.tiffsave(str(mask_path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
+        
+        if self.hdf5_file.__bool__():
+            self.hdf5_file.close()
+        return outputs
     

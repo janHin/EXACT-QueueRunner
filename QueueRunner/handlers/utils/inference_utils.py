@@ -2,6 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 from ..utils.object_detection_helper import *
 from typing import Callable, Union
 from torchvision import transforms
+from PIL import ImageColor
 from pathlib import Path
 import numpy as np
 import openslide
@@ -201,10 +202,11 @@ class DetectionInference(Inference):
     
 
 class SegmentationInference(Inference):
-    def __init__(self, hdf5_file, **kwargs):
+    def __init__(self, hdf5_file, anno_classes, **kwargs):
         super().__init__(**kwargs)
         self.outputs = 1
         self.hdf5_file = hdf5_file
+        self.anno_classes = anno_classes
 
     def get_activeMap(self):
         # Perform inference on all patches
@@ -236,23 +238,16 @@ class SegmentationInference(Inference):
         for n, key in enumerate(list(self.hdf5_file.keys())):
             data = self.hdf5_file[key]
             ndarray_data = np.array(data)
-            scaled_image_data = (ndarray_data * (255 / len(np.unique(ndarray_data)))).astype(np.uint8)
-
-
-            # Define a color mapping for each integer value
-            color_map = {
-                0: (0, 0, 0, 255),    # Black
-                1: (255, 0, 0, 255),  # Red
-                2: (0, 255, 0, 255),  # Green
-                3: (0, 0, 255, 255),  # Blue
-                4: (255, 255, 0, 255),  # Yellow
-                5: (255, 255, 255, 255)  # White
-            }
-
-            #colored_image = cv2.applyColorMap(ndarray_data.astype(np.uint8), colormap=color_map)
-            colored_image = cv2.applyColorMap(scaled_image_data, cv2.COLORMAP_VIRIDIS)
+            color_map = {}
+            for idx, c in enumerate(self.classes):
+                if c in self.anno_classes.keys():
+                    color_map[idx] = ImageColor.getcolor(self.anno_classes[c]['color_code'], "RGB")
+                else:
+                     color_map[idx] = (255, 255, 255)
+            colored_image = np.asarray([color_map[i] for i in np.int16(ndarray_data.flatten())],dtype=np.uint8).\
+                reshape((ndarray_data.shape[0], ndarray_data.shape[1], -1))
             vi = pyvips.Image.new_from_array(colored_image)
-            mask_path = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', "{}_{}.tiff".format(Path(self.slide._filename).stem, key))
+            mask_path = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', "{}_{}.png".format(Path(self.slide._filename).stem, key))
             outputs.append(mask_path)
             vi.tiffsave(str(mask_path), tile=True, compression='lzw', bigtiff=True, pyramid=True, tile_width=256, tile_height=256)
         

@@ -17,6 +17,7 @@ from exact_sync.v1.models import PluginResultBitmap, PluginResult, PluginResultE
 class CATCHInference(SegmentationInference):
     def __init__(self, **kwargs) -> None:
         super().__init__(down_factor = 16, patch_size = 512, mean=torch.FloatTensor([0.7587, 0.5718, 0.6572]), std=torch.FloatTensor([0.0866, 0.1118, 0.0990]), **kwargs)
+        self.classes = ['BACKGROUND', 'DERMIS', 'EPIDERMIS', 'SUBCUTIS', 'INFLAMM/NECROSIS', 'TUMOR']
 
     def configure_model(self):
         logging.info('Loading model')
@@ -90,7 +91,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             logging.info('Inference for job %d' % job.id)
             hdf5_path = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', "{}.hdf5".format(Path(image.filename).stem))
             hdf5_file = h5py.File(hdf5_path, "w")
-            inference_module = CATCHInference(fname = tpath, update_progress = update_progress, hdf5_file=hdf5_file)
+            inference_module = CATCHInference(fname = tpath, update_progress = update_progress, hdf5_file=hdf5_file, anno_classes=annoclasses)
             segmentation_results = inference_module.process()
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while processing segmentation inference'
@@ -119,23 +120,12 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             
             apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
             return False
-            
         try:
-            # Create result entry for result
-            # Each plugin result can contain collection of annotations. 
-            resultentry = PluginResultEntry(pluginresult=result.id, name='Segmentation', annotation_results = [], bitmap_results=[], default_threshold=0.0) # optionally set threshold
-            resultentry = apis['processing'].create_plugin_result_entry(body=resultentry)
-        except Exception as e:
-            error_message = 'Error: '+str(type(e))+' while creating plugin result entry'
-            error_detail = str(e)+f'PluginResult {result.id}'
-            logging.error(str(e))
-            
-            apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
-            return False
-
-        try:
-            image_type = int(Image.ImageSourceTypes.DEFAULT)
+            image_type = int(Image.ImageSourceTypes.SERVER_GENERATED)
             for mask_path in segmentation_results:
+                for existing_result in apis['images'].list_images(image_set=imageset, image_type=image_type).results:
+                    if existing_result.name == Path(mask_path).name:
+                        apis['images'].destroy_image(id=existing_result.id)
                 image = apis['images'].create_image(file_path=mask_path, image_type=image_type, image_set=imageset).results[0]
                 unlinklist.append(mask_path)
            

@@ -16,6 +16,7 @@ import zipfile
 import joblib
 import torch
 import os
+import gc
 
 update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 

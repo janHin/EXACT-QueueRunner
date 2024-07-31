@@ -14,3 +14,6 @@ __pycache__/
 .vscode/extensions.json
 .vscode/*.code-snippets
 .DS_Store
+
+QueueRunner/tmp
+*.pth

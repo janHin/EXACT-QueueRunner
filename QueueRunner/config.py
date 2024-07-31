@@ -1,5 +1,5 @@
 # Set the configuration option for your EXACT instance
 
-username=""
-password=""
-serverurl="https://"
+username="exact"
+password="exact"
+serverurl="http://127.0.0.1:8000"

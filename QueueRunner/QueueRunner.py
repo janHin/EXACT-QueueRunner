@@ -89,13 +89,12 @@ def main():
     try:
         while (True):
             jobs=processing_api.list_plugin_jobs(limit=100000000).results
-            logging.info('Job queue contains '+str(len(jobs))+' jobs')
+            # Only work on jobs that are not already completed or failed with an error
+            unprocessed_jobs = [job for job in jobs if job.processing_complete != 100]
 
-            for job in jobs:
+            logging.info('Job queue contains '+str(len(unprocessed_jobs))+' unprocessed jobs')
 
-                # Only work on jobs that are not already completed or failed with an error
-                if (job.processing_complete==100):
-                    continue
+            for job in unprocessed_jobs:
 
                 # Get update about job
                 try:
@@ -136,7 +135,8 @@ def main():
                             
                         if success:
                             update_progress(100.0)
-                            apis['processing'].partial_update_plugin_job(id=job.id, error_message=None, error_detail=None)
+                            apis['processing'].partial_update_plugin_job(id=job.id, error_message=None, error_detail=None, attached_worker=None)
+                            continue
 
 
                         apis['processing'].partial_update_plugin_job(id=job.id, attached_worker=None)

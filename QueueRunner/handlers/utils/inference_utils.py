@@ -52,7 +52,7 @@ class Inference:
         self.down_factor = down_factor
         self.level =  np.where(np.abs(np.array(self.slide.level_downsamples)-self.down_factor) < 1)[0][0]
         self.patch_size = patch_size
-        self.device = torch.device('mps') if torch.backends.mps.is_available else torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = torch.device('mps') if torch.backends.mps.is_available() else torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.outputs = 1
         self.update_progress = update_progress
         self.mean = mean

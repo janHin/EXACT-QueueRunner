@@ -16,6 +16,7 @@ import os
 
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
+os.environ["OMP_NUM_THREADS"] = "1"
 
 def pil2tensor(image:Union[np.ndarray,np.ndarray],dtype:np.dtype)->torch.Tensor:
     "Convert PIL style `image` array to torch style image tensor."
@@ -125,7 +126,7 @@ class Inference:
         time_reading=0
         time_processing=0
         t0 = time.time()
-        dl = DataLoader(self.dataset, num_workers=4, batch_size=8)
+        dl = DataLoader(self.dataset, num_workers=0, batch_size=8)
         patch_counter = 0
         prediction = []
         x_coordinates, y_coordinates = [], []

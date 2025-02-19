@@ -15,6 +15,7 @@ fastai>=2.7.10
 pytorch-lightning>=1.9.0
 qt-wsi-registration>=0.0.6
 EXCAT-Sync>=0.0.22
+#EXCAT-Sync @ git+https://github.com/ChristianMarzahl/EXACT-Sync@444f1b841dbbba48abd8f918b43a515cb97a67eb
 tiatoolbox>=1.5.1
 pyvips
 h5py

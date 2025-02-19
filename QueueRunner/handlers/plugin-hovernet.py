@@ -1,5 +1,9 @@
+#STL imports
+import os
+import gc
+
+#3rd party imports
 from tiatoolbox.models.engine.nucleus_instance_segmentor import NucleusInstanceSegmentor
-from .utils.inference_utils import DetectionInference
 from typing import Callable
 from pathlib import Path
 from tqdm import tqdm
@@ -7,12 +11,13 @@ import logging
 import zipfile
 import joblib
 import torch
-import os
-import gc
+from exact_sync.v1.models import PluginResultAnnotation, PluginResult, PluginResultEntry, Plugin, PluginJob
+
+#local imports
+from .utils.inference_utils import DetectionInference
 
 update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
-from exact_sync.v1.models import PluginResultAnnotation, PluginResult, PluginResultEntry, Plugin, PluginJob
 
 class NucleusInference(DetectionInference):
     def __init__(self, **kwargs) -> None:

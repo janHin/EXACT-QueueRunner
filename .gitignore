@@ -17,3 +17,6 @@ __pycache__/
 
 QueueRunner/tmp
 *.pth
+
+#pyenv
+.python-version

@@ -27,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "openslide-python==1.1.2",
+  "openslide-python",
   "django-project-version>=0.13.0",
   "torchvision>=0.14.1",
   "typing-extensions>=4.4.0",

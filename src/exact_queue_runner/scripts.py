@@ -20,4 +20,4 @@ def cli(job_limit:int,restart:bool,idle_limit:int):
     '''Command line interface'''
     logger.info('Starting up queue_handler %s',str(__version__))
 
-    run_loop(job_limit=job_limit,restart=restart,idle_limit)
+    run_loop(job_limit,restart,idle_limit)

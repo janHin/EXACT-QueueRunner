@@ -24,7 +24,7 @@ from exact_sync.exact_manager import *
 
 #local imports
 import handlers as handlers
-import .config
+import .config as config
 from .utils import iter_namespace, get_workername
 
 logger = logging.getLogger(__name__)

@@ -6,16 +6,16 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/queue_runner/_version.py"
+version-file = "src/exact_queue_runner/_version.py"
 
 [tool.hatch.version]
 source = "vcs"
 
 [project.scripts]
-queueu_runner = "queue_runner.scripts:cli"
+queueu_runner = "exact_queue_runner.scripts:cli"
 
 [project]
-name = "EXACT-QueueRunner"
+name = "exact_queue_runner"
 #version = "1.0.0"
 dynamic = ["version"]
 authors = [

@@ -23,7 +23,7 @@ from exact_sync.exact_errors import *
 from exact_sync.exact_manager import *
 
 #local imports
-import handlers as handlers
+import handlers
 from .config import username,password,serverurl
 from .utils import iter_namespace, get_workername
 

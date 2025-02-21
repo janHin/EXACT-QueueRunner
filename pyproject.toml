@@ -12,7 +12,7 @@ version-file = "src/queue_runner/_version.py"
 source = "vcs"
 
 [project.scripts]
-queueu_runner = "queue_runner.__main__:main"
+queueu_runner = "queue_runner.scripts:cli"
 
 [project]
 name = "EXACT-QueueRunner"

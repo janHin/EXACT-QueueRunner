@@ -24,15 +24,15 @@ from exact_sync.exact_manager import *
 
 #local imports
 import handlers as handlers
-import .config as config
+from .config import username,password,serverurl
 from .utils import iter_namespace, get_workername
 
 logger = logging.getLogger(__name__)
 
 configuration = Configuration()
-configuration.username = config.username
-configuration.password = config.password
-configuration.host     = config.serverurl
+configuration.username = username
+configuration.password = password
+configuration.host     = serverurl
 
 class JobRemovedException(Exception):
     pass

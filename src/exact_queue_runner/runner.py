@@ -92,10 +92,10 @@ class ExactConnection():
 
     def destroy_job(self,job_id:int)->bool:
         ''''''
-        job = self._processing_api.retrieve_plugin_job(job_id,async_request=False)
+        job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
         self._processing_api.destroy_plugin_job(id=job_id,async_req=False)
         time.sleep(.5)
-        job = self._processing_api.retrieve_plugin_job(job_id,async_request=False)
+        job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
         return True
 
     def update_job_progress(self,job:PluginJob,progress:float):

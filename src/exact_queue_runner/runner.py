@@ -190,7 +190,7 @@ def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
     except Exception as e:
         logger.error('encountered error (%s) running inference_func'
             ' for %s',str(e),plugin['name'])
-        exact_connection.update_job_exception(e)
+        exact_connection.update_job_exception(job,e)
         raise e
 
     exact_connection.update_job_progress(job,100.0)

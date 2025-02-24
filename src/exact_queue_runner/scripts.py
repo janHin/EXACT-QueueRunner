@@ -58,5 +58,6 @@ def destroy(job_id:int):
 @click.argument("image",type=str)
 def remove_results(image:str):
     '''remove plugin results for image(s)'''
+    print("debug")
     logger.info('in remove_results')
     exact_connection.get_image_id('test')

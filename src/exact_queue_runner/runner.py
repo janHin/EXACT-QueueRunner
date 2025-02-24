@@ -170,7 +170,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         worker_name:str)->bool:
     ''''''
 
-    job = exact_connection.get_new_job()
+    job = exact_connection.get_next_job()
     
     if job is None:
         logger.info("no job returned by get_job()")

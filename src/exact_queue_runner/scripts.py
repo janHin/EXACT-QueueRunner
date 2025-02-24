@@ -53,3 +53,9 @@ def run(job_limit:int,restart:bool,idle_limit:float,outdir:Path):
 def destroy(job_id:int):
     '''destroy job with given id'''
     exact_connection.destroy_job(job_id)
+
+@cli.command()
+@click.argument("image",type=str)
+def remove_results(image:str):
+    '''remove plugin results for image(s)'''
+    

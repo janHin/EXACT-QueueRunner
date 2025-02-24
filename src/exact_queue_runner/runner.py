@@ -107,6 +107,22 @@ class ExactConnection():
             if exc.status != 404:
                 raise exc
 
+    def get_image_id(self,image:str):
+        images = self._images_api.list_images(async_reg=False)
+        print(images)
+
+    def remove_results(self,image_id:int):
+        plugin_results = self._processing_api.list_plugin_results(asnyc_req=False)
+        
+        def filter_func(plugin_result:PluginResult):
+            if image_id is not None and plugin_result.image != image_id:
+                return False
+            return True
+
+        plugin_result_filtered = filter(filter_func,plugin_results)
+             
+        #self._processing_api.destroy_plugin_result()
+
     def update_job_exception(self,job:PluginJob,exception:Exception):
         ''''''
         error_message = f'Exception: {str(type(exception))}'

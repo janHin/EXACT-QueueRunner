@@ -222,7 +222,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         str(job.attached_worker))
     logger.info(f'Job {job.id}: Claiming job.')
     
-    exact_connection.update_job_worker(worker_name)
+    exact_connection.update_job_worker(job,worker_name)
 
     # re-check if we got the job after a random time below 1 second
     time.sleep(random.random())

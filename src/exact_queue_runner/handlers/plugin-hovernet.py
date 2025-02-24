@@ -22,7 +22,7 @@ UPDATE_STEPS = 10 # after how many steps will we update the progress bar during 
 
 class NucleusInference(DetectionInference):
     def __init__(self, outdir:Path,**kwargs) -> None:
-        super().__init__(down_factor = 1, patch_size = 512, mean=None, std=None,
+        super().__init__(down_factor = 32, patch_size = 512, mean=None, std=None,
             detection_threshold = 0.55, **kwargs)
         if not outdir.is_dir():
             raise FileNotFoundError(f'could not find outdir: {outdir}')

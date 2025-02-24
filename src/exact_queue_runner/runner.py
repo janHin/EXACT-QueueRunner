@@ -281,6 +281,7 @@ def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
 
     except Exception as e:
         # restart
-        logging.error('Caught exception. Restarting. Error was: '+str(e))
+        logging.error('Caught exception.',exc_info=True)
         if restart:
             run_loop()
+        raise e

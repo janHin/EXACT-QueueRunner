@@ -10,8 +10,10 @@ import click_log
 from ._version import __version__
 from .runner import run_loop
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logger = logging.root
+click_log.basic_config(logger)
+
 
 @click.command()
 @click.version_option(__version__)

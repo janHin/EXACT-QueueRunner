@@ -243,7 +243,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         raise e from e
     finally:
         #make sure to always release the job!
-        exact_connection.update_job_released()
+        exact_connection.update_job_released(job)
 
     logger.info('unclaiming job %d' % job.id)     
     # Break for loop to achieve refreshing of jobs list

@@ -13,7 +13,7 @@ from .runner import run_loop
 logger = logging.root
 
 FMT_STRING='%(levelname)s:%(message)s'
-formatter = click_log.ColorFormatter(logging.Formatter(FMT_STRING))
+formatter = click_log.ColorFormatter(FMT_STRING)
 handler   = click_log.ClickHandler()
 handler.formatter = formatter
 

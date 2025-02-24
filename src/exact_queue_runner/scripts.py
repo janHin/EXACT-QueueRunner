@@ -13,9 +13,9 @@ logger = logging.root
 
 @click.command()
 @click.version_option(__version__)
-@click.option("job_limit",type=int,default=-1,help="maximum number of jobs")
-@click.option("restart",is_flag=True)
-@click.option("idle_limit",help="idle time limit in seconds",default=-1)
+@click.option("--job_limit",type=int,default=-1,help="maximum number of jobs")
+@click.option("--restart",is_flag=True,help="restart upon error")
+@click.option("--idle_limit",help="idle time limit in seconds",default=-1)
 def cli(job_limit:int,restart:bool,idle_limit:float):
     '''Command line interface'''
     logger.info('Starting up queue_handler %s',str(__version__))

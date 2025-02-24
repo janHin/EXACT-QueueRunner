@@ -109,7 +109,7 @@ class ExactConnection():
 
     def get_image_id(self,image:str):
         images = self._images_api.list_images(async_reg=False)
-        print(images)
+        logger.info(images)
 
     def remove_results(self,image_id:int):
         plugin_results = self._processing_api.list_plugin_results(asnyc_req=False)

@@ -26,15 +26,11 @@ from exact_sync.exact_manager import *
 
 #local imports
 from . import handlers
-from .config import username,password,serverurl
 from .utils import iter_namespace, get_workername
 
 logger = logging.getLogger(__name__)
 
-configuration = Configuration()
-configuration.username = username
-configuration.password = password
-configuration.host     = serverurl
+
 
 class JobRemovedException(Exception):
     pass
@@ -75,9 +71,11 @@ class ExactConnection():
 
                 self._processing_api.create_plugin(**plugin_entries)
 
+
+
     def get_next_job(self)->PluginJob:
         ''''''
-        jobs=self._processing_api.list_plugin_jobs(limit=1e8).results
+        jobs=self._processing_api.list_plugin_jobs(limit=1e3).results
         # Only work on jobs that are not already completed or failed with an error
         unprocessed_jobs = [job for job in jobs if job.processing_complete != 100]
         logger.info('Job queue contains '+str(len(unprocessed_jobs))+' unprocessed jobs')
@@ -91,6 +89,14 @@ class ExactConnection():
                 continue
             return job
         return None
+
+    def destroy_job(self,job_id:int)->bool:
+        ''''''
+        job = self._processing_api.retrieve_plugin_job(job_id,async_request=False)
+        self._processing_api.destroy_plugin_job(id=job_id,async_req=False)
+        time.sleep(.5)
+        job = self._processing_api.retrieve_plugin_job(job_id,async_request=False)
+        return True
 
     def update_job_progress(self,job:PluginJob,progress:float):
         ''''''
@@ -225,13 +231,13 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
     # Break for loop to achieve refreshing of jobs list
     return success
 
-def run_loop(job_limit:int=-1,restart:bool=True,idle_limit:float=-1):
+def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
+    restart:bool=True,idle_limit:float=-1):
 
     time.sleep(np.random.randint(5))
 
-    exact_connection = ExactConnection(configuration)
     plugin_handler = PluginHandler(exact_connection)
-                    
+
     worker_name = get_workername()
     logger.info('This is worker: '+worker_name)
 
@@ -262,6 +268,3 @@ def run_loop(job_limit:int=-1,restart:bool=True,idle_limit:float=-1):
         logging.error('Caught exception. Restarting. Error was: '+str(e))
         if restart:
             run_loop()
-    
-if __name__ == "__main__":
-    run_loop()    

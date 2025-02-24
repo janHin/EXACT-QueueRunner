@@ -138,13 +138,16 @@ class PluginHandler():
 def is_valid_job(job:PluginJob)->bool:
 
     if job.error_message:
-        logger.warning('job has error: %s \n continuing',str(job.error_message))
+        logger.warning('job (%d) has error: %s \n continuing',job.id,
+            str(job.error_message))
         return False
 
     if job.result is not None:
+        logger.info('job (%d) already has result attached',job.id)
         return False
-        
+
     if job.attached_worker is not None and (len(job.attached_worker)>0):
+        logger.info('job (%d) already has result attached',job.id)
         return False
     return True
 
@@ -165,6 +168,7 @@ def process_job(exact_connection:ExactConnection,job:PluginJob,plugin)->bool:
 
     if success:
         exact_connection.update_job_progress(job,100.0)
+    return success
 
 def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         worker_name:str)->bool:

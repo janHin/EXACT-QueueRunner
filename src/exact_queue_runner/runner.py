@@ -108,8 +108,9 @@ class ExactConnection():
                 raise exc
 
     def get_image_id(self,image:str):
+        logger.info('getting images')
         images = self._images_api.list_images(async_req=False)
-        logger.info(images)
+        logger.info('images: %s',str(images))
 
     def remove_results(self,image_id:int):
         plugin_results = self._processing_api.list_plugin_results(asnyc_req=False)

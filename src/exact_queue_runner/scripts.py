@@ -6,6 +6,9 @@ import logging
 import click
 import click_log
 
+#Exact imports
+from exact_sync.v1.configuration import Configuration
+
 #local imports
 from ._version import __version__
 from .runner import run_loop

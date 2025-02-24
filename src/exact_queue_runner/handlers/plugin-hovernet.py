@@ -16,7 +16,7 @@ from exact_sync.v1.models import PluginResultAnnotation, PluginResult, PluginRes
 #local imports
 from .utils.inference_utils import DetectionInference
 
-update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
+UPDATE_STEPS = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
 
 class NucleusInference(DetectionInference):
@@ -159,7 +159,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             # Loop through all detections
             for n, key in enumerate(tqdm(stage1_results,desc='Uploading annotations')):
 
-                if (n%update_steps == 0):
+                if (n%UPDATE_STEPS == 0):
                     update_progress (90+10*(n/len(stage1_results))) # 90.100% are for upload
 
                 line = stage1_results[key]

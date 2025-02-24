@@ -1,18 +1,28 @@
-from .utils.inference_utils import SegmentationInference
-from fastai.vision.models.unet import DynamicUnet
-from torchvision.models.resnet import resnet18
-from fastai.vision.learner import create_body
+#STL imports
 from typing import Callable
 from pathlib import Path
 import logging
 import zipfile
-import torch
-import h5py
 import os
 
-update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
+#3rd party imports
+from fastai.vision.models.unet import DynamicUnet
+from torchvision.models.resnet import resnet18
+from fastai.vision.learner import create_body
+import torch
+import h5py
 
+#Exact imports
 from exact_sync.v1.models import PluginResultBitmap, PluginResult, PluginResultEntry, Plugin, PluginJob, Image
+
+#local imports
+from .utils.inference_utils import SegmentationInference
+
+
+UPDATE_STEPS = 10 # after how many steps will we update the progress bar during 
+                  # upload (stage1 and stage2 updates are configured in 
+                  # the respective files)
+
 
 class CATCHInference(SegmentationInference):
     def __init__(self, **kwargs) -> None:

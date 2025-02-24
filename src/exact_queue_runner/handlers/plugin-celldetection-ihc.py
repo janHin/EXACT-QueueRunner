@@ -22,8 +22,9 @@ from .utils.inference_utils import DetectionInference
 from .utils.models.RetinaNet import RetinaNet
 
 
-
-update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
+UPDATE_STEPS = 10 # after how many steps will we update the progress bar during
+                  # upload (stage1 and stage2 updates are configured in the 
+                  # respective files)
 
 
 class LymphocyteInference(DetectionInference):
@@ -171,7 +172,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             # Loop through all detections
             for n, line in enumerate(tqdm(stage1_results,desc='Uploading annotations')):
 
-                if (n%update_steps == 0):
+                if (n%UPDATE_STEPS == 0):
                     update_progress (90+10*(n/len(stage1_results))) # 90.100% are for upload
 
                 predcoords, score = line[0:4], line[4]

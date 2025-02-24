@@ -11,6 +11,8 @@ import random
 #3rd party imports
 import numpy as np
 
+import h5py
+
 #exact imports
 from exact_sync.v1.configuration import Configuration
 from exact_sync.v1.api_client import ApiClient

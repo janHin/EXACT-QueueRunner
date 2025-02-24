@@ -48,7 +48,7 @@ class NucleusInference(DetectionInference):
 
         self.device = torch.device('cpu')
 
-        self.model.model.to(self.device)
+        self.model.model = self.model.model.to(self.device)
         wsi_output = self.model.predict(
             [self.slide._filename],
             masks=None,

@@ -23,7 +23,7 @@ from exact_sync.exact_errors import *
 from exact_sync.exact_manager import *
 
 #local imports
-import handlers
+from . import handlers
 from .config import username,password,serverurl
 from .utils import iter_namespace, get_workername
 
@@ -117,7 +117,7 @@ class PluginHandler():
         '''get local plugin modules from handlers subfolder'''
         plugins={}
 
-        for finder, name, ispkg in sorted(iter_namespace(handlers)):
+        for finder, name, ispkg in sorted(iter_namespace(".handlers")):
             try:
                 mod = importlib.import_module(name)
                 plugins[name] = mod
@@ -128,8 +128,8 @@ class PluginHandler():
     def get_plugin_for_job(self,job:PluginJob):
         for plugin in self._local_plugins.values():
             if job.plugin == self._exact_plugins[plugin['package']].id:
-                return plugin        
-        return None                          
+                return plugin
+        return None
 
 
 def is_valid_job(job:PluginJob)->bool:

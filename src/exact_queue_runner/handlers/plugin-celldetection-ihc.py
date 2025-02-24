@@ -1,20 +1,30 @@
+#STL imports
+import os
+import logging
+import zipfile
+from typing import Callable
+
+#3rd party imports
+from torchvision.models.resnet import resnet18
+from fastai.vision.learner import create_body
+import numpy as np
+from tqdm import tqdm
+import torch
+
+#exact imports
+from exact_sync.v1.models import (PluginResultAnnotation, PluginResult, 
+    PluginResultEntry, Plugin, PluginJob)
+
+#local imports
 from .utils.nms_WSI import non_max_suppression_by_distance
 from .utils.object_detection_helper import create_anchors
 from .utils.inference_utils import DetectionInference
 from .utils.models.RetinaNet import RetinaNet
-from torchvision.models.resnet import resnet18
-from fastai.vision.learner import create_body
-from typing import Callable
-from tqdm import tqdm
-import numpy as np
-import logging
-import zipfile
-import torch
-import os
+
+
 
 update_steps = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
-from exact_sync.v1.models import PluginResultAnnotation, PluginResult, PluginResultEntry, Plugin, PluginJob
 
 class LymphocyteInference(DetectionInference):
     def __init__(self, **kwargs) -> None:
@@ -200,5 +210,3 @@ plugin = {  'name':'Cell Detection',
             'products':[],
             'results':[],
             'inference_func' : inference}
-
-

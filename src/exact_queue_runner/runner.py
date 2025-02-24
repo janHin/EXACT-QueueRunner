@@ -121,6 +121,7 @@ class PluginHandler():
 
         for finder, name, ispkg in sorted(iter_namespace(handlers)):
             try:
+                logger.info('activating plugin %s',name)
                 mod = importlib.import_module(name)
                 plugins[name] = mod
             except Exception as e:

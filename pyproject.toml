@@ -41,6 +41,7 @@ dependencies = [
   "pyvips",
   "h5py",
   "click",
+  "click-log",
 ]
 
 

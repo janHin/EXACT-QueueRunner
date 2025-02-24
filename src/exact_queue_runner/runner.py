@@ -41,7 +41,7 @@ class ExactConnection():
 
     def __init__(self,configuration:Configuration) -> None:
         self._manager        = ExactManager(username=configuration.username,   
-            password=configuration.password, serverurl=configuration.serverurl,
+            password=configuration.password, serverurl=configuration.host,
             loglevel=100)
         self._client         = ApiClient(configuration=configuration)
         self._processing_api = ProcessingApi(self._client)

@@ -117,7 +117,7 @@ class PluginHandler():
         '''get local plugin modules from handlers subfolder'''
         plugins={}
 
-        for finder, name, ispkg in sorted(iter_namespace(".handlers")):
+        for finder, name, ispkg in sorted(iter_namespace(handlers)):
             try:
                 mod = importlib.import_module(name)
                 plugins[name] = mod
@@ -218,7 +218,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
     # Break for loop to achieve refreshing of jobs list
     return success
 
-def run_loop(job_limit:int=-1,restart:bool=True,idle_limit:int=-1):
+def run_loop(job_limit:int=-1,restart:bool=True,idle_limit:float=-1):
 
     time.sleep(np.random.randint(5))
 

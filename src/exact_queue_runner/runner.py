@@ -108,7 +108,7 @@ class ExactConnection():
                 raise exc
 
     def get_image_id(self,image:str):
-        images = self._images_api.list_images(async_reg=False)
+        images = self._images_api.list_images(async_req=False)
         logger.info(images)
 
     def remove_results(self,image_id:int):

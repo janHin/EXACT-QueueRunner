@@ -30,7 +30,7 @@ configuration.password = password
 configuration.host     = serverurl
 exact_connection = ExactConnection(configuration)
 
-@click.command()
+@click.group()
 @click.version_option(__version__)
 @click_log.simple_verbosity_option(logger,default='INFO')
 def cli():

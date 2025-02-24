@@ -51,7 +51,7 @@ class NucleusInference(DetectionInference):
             masks=None,
             save_dir=self.outdir / Path(self.slide._filename).stem,
             mode="wsi",
-            on_gpu=True if str(self.device) == 'cuda' else False,
+            device=self.device,
             crash_on_exception=True,
         )
 

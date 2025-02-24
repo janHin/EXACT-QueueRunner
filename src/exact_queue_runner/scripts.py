@@ -1,6 +1,7 @@
 '''entrypoint scripts'''
 #STL imports
 import logging
+from pathlib import Path
 
 #3rd party imports
 import click
@@ -40,11 +41,12 @@ def cli():
 @click.option("--job_limit",type=int,default=-1,help="maximum number of jobs")
 @click.option("--restart",is_flag=True,help="restart upon error")
 @click.option("--idle_limit",help="idle time limit in seconds",default=-1)
-def run(job_limit:int,restart:bool,idle_limit:float):
+@click.option("--outdir",default=None,type=click.Path(exists=True,path_type=Path))
+def run(job_limit:int,restart:bool,idle_limit:float,outdir:Path):
     '''Command line interface'''
     logger.info('Starting up queue_handler %s',str(__version__))
 
-    run_loop(exact_connection,job_limit,restart,idle_limit)
+    run_loop(exact_connection,job_limit,restart,idle_limit,outdir=outdir)
 
 @cli.command()
 @click.argument("job_id",type=int)

@@ -91,7 +91,7 @@ class ExactConnection():
             return job
         return None
 
-    def destroy_job(self,job_id:int)->bool:
+    def destroy_job(self,job_id:int):
         ''''''
         try:
             job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
@@ -106,7 +106,14 @@ class ExactConnection():
         except ApiException as exc:
             if exc.status != 404:
                 raise exc
-        return True
+
+    def update_job_exception(self,job:PluginJob,exception:Exception):
+        ''''''
+        error_message = f'Exception: {str(type(exception))}'
+        error_detail = str(exception)
+        self._processing_api.partial_update_plugin_job(id=job.id,
+            error_message=error_message, error_detail=error_detail,
+            async_req=False)
 
     def update_job_progress(self,job:PluginJob,progress:float):
         ''''''
@@ -167,27 +174,27 @@ def is_valid_job(job:PluginJob)->bool:
         return False
     return True
 
-def process_job(exact_connection:ExactConnection,job:PluginJob,plugin)->bool:
+def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
+    outdir:Path)->bool:
     '''
     '''
-    
+
     def update_progress(progress:float):
         exact_connection.update_job_progress(job,progress)
 
     try:
         success = plugin['inference_func'](apis=exact_connection.api_dict, job=job,
-            update_progress=update_progress)
+            update_progress=update_progress,outdir=outdir)
     except Exception as e:
-        logger.error('encountered error running inference_func'
-            ' for %s',plugin['name'])
-        success = False
+        logger.error('encountered error (%s) running inference_func'
+            ' for %s',str(e),plugin['name'])
+        exact_connection.update_job_exception(e)
+        raise e
 
-    if success:
-        exact_connection.update_job_progress(job,100.0)
-    return success
+    exact_connection.update_job_progress(job,100.0)
 
 def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
-        worker_name:str)->bool:
+        worker_name:str,outdir:Path)->bool:
     ''''''
 
     job = exact_connection.get_next_job()
@@ -231,18 +238,18 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
     logger.info('Successfully claimed job %d' % job.id)
 
     try:
-        success = process_job(exact_connection,job,plugin)
+        process_job(exact_connection,job,plugin,outdir)
     except Exception as e:
         raise e from e
     finally:
+        #make sure to always release the job!
         exact_connection.update_job_released()
 
     logger.info('unclaiming job %d' % job.id)     
     # Break for loop to achieve refreshing of jobs list
-    return success
 
 def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
-    restart:bool=True,idle_limit:float=-1):
+    restart:bool=True,idle_limit:float=-1,outdir:Path=None):
 
     time.sleep(np.random.randint(5))
 
@@ -251,18 +258,17 @@ def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
     worker_name = get_workername()
     logger.info('This is worker: '+worker_name)
 
-    n_successful_jobs = 0
+    n_jobs = 0
     idle_time = 0.
     start_time = datetime.datetime.now()
 
     try:
         while (True):
-            success = do_run(exact_connection,plugin_handler,worker_name)
+            do_run(exact_connection,plugin_handler,worker_name,outdir)
 
-            if success:
-                n_successful_jobs += 1
+            n_jobs += 1
 
-            if job_limit >0 and n_successful_jobs >= job_limit:
+            if job_limit >0 and n_jobs >= job_limit:
                 break
 
             idle_time = (datetime.datetime.now() - start_time).seconds

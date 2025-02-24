@@ -1,6 +1,7 @@
 #STL imports
 import os
 import gc
+from pathlib import Path
 
 #3rd party imports
 from tiatoolbox.models.engine.nucleus_instance_segmentor import NucleusInstanceSegmentor
@@ -20,8 +21,13 @@ UPDATE_STEPS = 10 # after how many steps will we update the progress bar during 
 
 
 class NucleusInference(DetectionInference):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(down_factor = 1, patch_size = 512, mean=None, std=None,  detection_threshold = 0.55, **kwargs)
+    def __init__(self, outdir:Path,**kwargs) -> None:
+        super().__init__(down_factor = 1, patch_size = 512, mean=None, std=None,
+            detection_threshold = 0.55, **kwargs)
+        if not outdir.is_dir():
+            raise FileNotFoundError(f'could not find outdir: {outdir}')
+ 
+        self.outdir = outdir
 
     def configure_model(self):
         logging.info('Loading model')
@@ -35,15 +41,15 @@ class NucleusInference(DetectionInference):
         )
 
         return model
-    
+
     def process(self):
         self.model = self.configure_model()
         mpp = float(self.slide.properties['openslide.mpp-x'])
-        
+
         wsi_output = self.model.predict(
             [self.slide._filename],
             masks=None,
-            save_dir="QueueRunner/tmp/{}/".format(Path(self.slide._filename).stem),
+            save_dir=self.outdir / Path(self.slide._filename).stem,
             mode="wsi",
             on_gpu=True if str(self.device) == 'cuda' else False,
             crash_on_exception=True,
@@ -59,7 +65,16 @@ class NucleusInference(DetectionInference):
         wsi_pred = {key:{'box': value['box']*(0.25/mpp), 'prob': value['prob']} for key, value in wsi_pred.items()}
         return wsi_pred
 
-def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
+def inference(apis:dict, job:PluginJob, update_progress:Callable,
+        outdir:Path = None, **kwargs):
+        '''
+        '''
+        
+        if outdir is None:
+            outdir = Path.cwd() / 'QueueRunner/tmp'
+            if not outdir.is_dir():
+                outdir.mkdir(parents=True)
+        
         image = apis['images'].retrieve_image(job.image)
         logging.info('Retrieving image set for job %d ' % job.id)
 
@@ -68,7 +83,8 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         imageset = image.image_set
  
         logging.info('Checking annotation type availability for job %d' % job.id)
-        annotationtypes = {anno_type['name']:anno_type for anno_type in apis['manager'].retrieve_annotationtypes(imageset)}        
+        annotationtypes = {anno_type['name']:anno_type
+            for anno_type in apis['manager'].retrieve_annotationtypes(imageset)}
                     
         # The correct annotation type is required in order to be able to add the annotation
         # CAVE: The annotation type also needs to be a part of the product that you want to apply
@@ -83,13 +99,13 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             error_detail = 'Annotation class Nucleus is required but does not exist for imageset '+str(imageset)
             logging.error(str(error_detail))
             apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
-            return False              
+            return False
         
         try:
-            tpath = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', image.filename)
+            tpath = outdir / image.filename
             if not os.path.exists(tpath):
                 if ('.mrxs' in str(image.filename).lower()):
-                    tpath = tpath + '.zip'
+                    tpath += '.zip'
                 logging.info('Downloading image %s to %s' % (image.filename,tpath))
                 apis['images'].download_image(job.image, target_path=tpath, original_image=False)
                 if ('.mrxs' in str(image.filename).lower()):
@@ -101,25 +117,27 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
                             unlinklist.append('tmp/'+f.orig_filename)
                         unlinklist.append(tpath)
                     # Original target path is MRXS file
-                    tpath = os.path.join(os.getcwd(), 'QueueRunner', 'tmp', image.filename)
+                    tpath = outdir / image.filename
                     
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while downloading'
             error_detail = str(e)
             logging.error(str(e))
-            apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
-            return False            
+            apis['processing'].partial_update_plugin_job(id=job.id, 
+                error_message=error_message, error_detail=error_detail)
+            return False
 
         try:
             logging.info('Prediction for job %d' % job.id)
-            inference_module = NucleusInference(fname = tpath, update_progress = update_progress)
+            inference_module = NucleusInference(outdir,fname = tpath, update_progress = update_progress)
             stage1_results = inference_module.process()
             #unlinklist.append(os.path.join(os.getcwd(), 'QueueRunner', 'tmp', Path(image.filename).stem))
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while processing WSI'
             error_detail = str(e)
             logging.error(str(e))
-            apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
+            apis['processing'].partial_update_plugin_job(id=job.id,
+                error_message=error_message, error_detail=error_detail)
             return False
 
         try:
@@ -127,7 +145,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             existing = [j.id for j in apis['processing'].list_plugin_results().results if j.job==job.id]
             if len(existing)>0:
                 apis['processing'].destroy_plugin_result(existing[0])
-            
+
             # Create Result for job
             # Each job is linked to a single result, which may consist of several result entries.
             result = PluginResult(job=job.id, image=image.id, plugin=job.plugin, entries=[])
@@ -138,10 +156,10 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
             error_message = 'Error: '+str(type(e))+' while creating plugin result'
             error_detail = str(e)+f'Job {job.id}, Image {image.id}, Pliugin {job.plugin}'
             logging.error(str(e))
-            
+
             apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
             return False
-            
+
         try:
             # Create result entry for result
             # Each plugin result can contain collection of annotations. 
@@ -163,18 +181,28 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
                     update_progress (90+10*(n/len(stage1_results))) # 90.100% are for upload
 
                 line = stage1_results[key]
-                predcoords, score = line["box"], line["prob"], 
+                predcoords, score = line["box"], line["prob"],
 
-                vector = {"x1": float(predcoords[0]), "y1": float(predcoords[1]), "x2": float(predcoords[2]), "y2": float(predcoords[3])}
-                anno = PluginResultAnnotation(annotation_type=annoclass['id'], pluginresultentry=resultentry.id, image=image.id, vector=vector, score=score)
-                anno = apis['processing'].create_plugin_result_annotation(body=anno, async_req=True)
-                    
+                vector = {"x1": float(predcoords[0]),
+                          "y1": float(predcoords[1]),
+                          "x2": float(predcoords[2]),
+                          "y2": float(predcoords[3])
+                          }
+                anno = PluginResultAnnotation(annotation_type=annoclass['id'],
+                    pluginresultentry=resultentry.id,
+                    image=image.id,
+                    vector=vector,
+                    score=score)
+                anno = apis['processing'].create_plugin_result_annotation(
+                    body=anno, async_req=True)
+    
         except Exception as e:
             error_message = 'Error: '+str(type(e))+' while uploading the annotations'
             error_detail = str(e)
             logging.error(str(e))
             
-            apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
+            apis['processing'].partial_update_plugin_job(id=job.id,
+                error_message=error_message, error_detail=error_detail)
             return False
         
         try:
@@ -197,5 +225,4 @@ plugin = {  'name':'HoverNet Nucleus Detection',
             'products':[],
             'results':[],
             'inference_func' : inference}
-
 

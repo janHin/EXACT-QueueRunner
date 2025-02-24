@@ -153,7 +153,7 @@ class PluginHandler():
 
     def get_plugin_for_job(self,job:PluginJob):
         for plugin in self._local_plugins.values():
-            if job.plugin == self._exact_plugins[plugin['package']].id:
+            if job.plugin == self._exact_plugins[plugin.plugin['package']].id:
                 return plugin
         return None
 

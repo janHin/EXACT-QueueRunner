@@ -186,7 +186,7 @@ def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
         success = plugin['inference_func'](apis=exact_connection.api_dict, job=job,
             update_progress=update_progress,outdir=outdir)
         if not success:
-            raise RuntimeError(f'encountered error running plugin {plugin}')
+            raise RuntimeError(f'encountered error running plugin {plugin["name"]}')
     except Exception as e:
         logger.error('encountered error (%s) running inference_func'
             ' for %s',str(e),plugin['name'])

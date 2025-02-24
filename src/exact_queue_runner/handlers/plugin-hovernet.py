@@ -51,7 +51,7 @@ class NucleusInference(DetectionInference):
             masks=None,
             save_dir=self.outdir / Path(self.slide._filename).stem,
             mode="wsi",
-            device=self.device,
+            device=torch.device('cpu'), #self.device,
             crash_on_exception=True,
         )
 

@@ -222,7 +222,7 @@ def run_loop(job_limit:int=-1,restart:bool=True,idle_limit:float=-1):
 
     time.sleep(np.random.randint(5))
 
-    exact_connection = ExactConnection(config)
+    exact_connection = ExactConnection(configuration)
     plugin_handler = PluginHandler(exact_connection)
                     
     worker_name = get_workername()

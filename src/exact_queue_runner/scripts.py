@@ -47,7 +47,7 @@ def run(job_limit:int,restart:bool,idle_limit:float):
     run_loop(exact_connection,job_limit,restart,idle_limit)
 
 @cli.command()
-@click.argument("job",type=int)
+@click.argument("job_id",type=int)
 def destroy(job_id:int):
     '''destroy job with given id'''
     exact_connection.destroy_job(job_id)

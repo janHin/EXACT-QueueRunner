@@ -23,6 +23,7 @@ from exact_sync.v1.api.images_api import ImagesApi
 from exact_sync.exact_enums import *
 from exact_sync.exact_errors import *
 from exact_sync.exact_manager import *
+from exact_sync.v1.rest import ApiException
 
 #local imports
 from . import handlers
@@ -92,10 +93,19 @@ class ExactConnection():
 
     def destroy_job(self,job_id:int)->bool:
         ''''''
-        job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
+        try:
+            job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
+        except ApiException as exc:
+            if exc.status == 404:
+                raise JobRemovedException(f'job ({job_id}) not found') from exc      
+            raise exc
         self._processing_api.destroy_plugin_job(id=job_id,async_req=False)
         time.sleep(.5)
-        job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
+        try:
+            job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
+        except ApiException as exc:
+            if exc.status != 404:
+                raise exc
         return True
 
     def update_job_progress(self,job:PluginJob,progress:float):

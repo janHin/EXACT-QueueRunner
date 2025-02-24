@@ -185,6 +185,8 @@ def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
     try:
         success = plugin['inference_func'](apis=exact_connection.api_dict, job=job,
             update_progress=update_progress,outdir=outdir)
+        if not success:
+            raise RuntimeError(f'encountered error running plugin {plugin}')
     except Exception as e:
         logger.error('encountered error (%s) running inference_func'
             ' for %s',str(e),plugin['name'])
@@ -239,11 +241,11 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
 
     try:
         process_job(exact_connection,job,plugin,outdir)
-    except Exception as e:
-        raise e from e
-    finally:
-        #make sure to always release the job!
         exact_connection.update_job_released(job)
+    except Exception as e:
+
+        raise e from e
+        
 
     logger.info('unclaiming job %d' % job.id)     
     # Break for loop to achieve refreshing of jobs list

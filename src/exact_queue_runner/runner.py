@@ -146,14 +146,14 @@ class PluginHandler():
             try:
                 logger.info('activating plugin %s',name)
                 mod = importlib.import_module(name)
-                plugins[name] = mod
+                plugins[name] = mod.plugin
             except Exception as e:
                 raise RuntimeError('+++ Unable to activate plugin: '+name) from e
         return  plugins
 
     def get_plugin_for_job(self,job:PluginJob):
         for plugin in self._local_plugins.values():
-            if job.plugin == self._exact_plugins[plugin.plugin['package']].id:
+            if job.plugin == self._exact_plugins[plugin['package']].id:
                 return plugin
         return None
 

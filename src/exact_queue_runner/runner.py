@@ -132,6 +132,7 @@ class ExactConnection():
             image_set_id = image_set
         else:
             image_set_id = self.get_image_set(image_set).id
+        logger.info('image set id: %d',image_set_id)
 
         def filter_func(image:Image)->bool:
             logger.info('image %s',str(image))
@@ -140,7 +141,6 @@ class ExactConnection():
             if name is not None and image.filename != name:
                 return False
             return True
-        logger.info('before filtering')
         images = [img for img in images if filter_func(img)]
         logger.info('filtered images %s',str(images))
         return images

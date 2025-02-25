@@ -62,6 +62,10 @@ def remove_results(image_name:str,image_set:str):
     '''remove plugin results for image(s)'''
     logger.info('queue runner remove_results')
 
+    if image_name is None and image_set is None:
+        click.BadOptionUsage('image_name image_set',
+            'either image_name or image_set have to be specified!')
+
     images = exact_connection.get_images(name=image_name,image_set=image_set)
 
     for image in images:

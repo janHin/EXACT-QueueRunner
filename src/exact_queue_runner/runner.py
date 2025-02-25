@@ -113,6 +113,7 @@ class ExactConnection():
                 raise exc
 
     def get_image_set(self,name:str)->ImageSet:
+        ''''''
         logger.info('getting imageset')
         imagesets = self._imageset_api.list_image_sets(async_req=False).results
         imagesets_filtered = [ims for ims in imagesets if ims.name == name]
@@ -123,7 +124,8 @@ class ExactConnection():
         return imagesets_filtered[0]
         
     def get_images(self,name:str=None,image_set:int|str=None)->List[Image]:
-        logger.info('getting image metadatas')
+        ''''''
+        logger.info('getting images')
         images = self._images_api.list_images(async_req=False).results
 
         if isinstance(image_set,int):
@@ -132,6 +134,7 @@ class ExactConnection():
             image_set_id = self.get_image_set(image_set).id
 
         def filter_func(image:Image)->bool:
+            logger.info('image %s',str(image))
             if name is not None and image.name != name:
                 return False
             if image_set_id is not None and image.image_set != image_set_id:

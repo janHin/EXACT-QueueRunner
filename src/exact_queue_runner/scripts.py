@@ -39,9 +39,9 @@ def cli():
     pass
 
 @cli.command()
-@click.option("--job_limit",type=int,default=-1,help="maximum number of jobs")
+@click.option("--joblimit",type=int,default=-1,help="maximum number of jobs")
 @click.option("--restart",is_flag=True,help="restart upon error")
-@click.option("--idle_limit",help="idle time limit in seconds",default=-1)
+@click.option("--idlelimit",help="idle time limit in seconds",default=-1)
 @click.option("--outdir",default=None,type=click.Path(exists=True,path_type=Path))
 def run(job_limit:int,restart:bool,idle_limit:float,outdir:Path):
     '''Command line interface'''

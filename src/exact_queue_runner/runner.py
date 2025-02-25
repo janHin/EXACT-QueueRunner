@@ -139,9 +139,10 @@ class ExactConnection():
                 return False
             if name is not None and image.filename != name:
                 return False
-           
-        images = [img for img in images if filter_func(img)]
+            return True
 
+        images = [img for img in images if filter_func(img)]
+        logger.info('filtered images %s',images)
         return images
 
     def get_plugin_results(self)->List[PluginResult]:

@@ -46,6 +46,8 @@ class NucleusInference(DetectionInference):
         self.model = self.configure_model()
         mpp = float(self.slide.properties['openslide.mpp-x'])
 
+        self.device = torch.device('cpu')
+
         wsi_output = self.model.predict(
             [self.slide._filename],
             masks=None,

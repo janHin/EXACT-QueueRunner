@@ -46,8 +46,6 @@ class NucleusInference(DetectionInference):
         self.model = self.configure_model()
         mpp = float(self.slide.properties['openslide.mpp-x'])
 
-        self.device = torch.device('cpu')
-
         wsi_output = self.model.predict(
             [self.slide._filename],
             masks=None,
@@ -55,7 +53,6 @@ class NucleusInference(DetectionInference):
             mode="wsi",
             device=self.device.type,
             crash_on_exception=True,
-            resolution=100,
         )
 
         wsi_pred = joblib.load(f"{wsi_output[0][1]}.dat")

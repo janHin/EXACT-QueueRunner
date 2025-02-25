@@ -43,11 +43,11 @@ def cli():
 @click.option("--restart",is_flag=True,help="restart upon error")
 @click.option("--idlelimit",help="idle time limit in seconds",default=-1)
 @click.option("--outdir",default=None,type=click.Path(exists=True,path_type=Path))
-def run(job_limit:int,restart:bool,idle_limit:float,outdir:Path):
+def run(joblimit:int,restart:bool,idlelimit:float,outdir:Path):
     '''Command line interface'''
     logger.info('Starting up queue_handler %s',str(__version__))
 
-    run_loop(exact_connection,job_limit,restart,idle_limit,outdir=outdir)
+    run_loop(exact_connection,joblimit,restart,idlelimit,outdir=outdir)
 
 @cli.command()
 @click.argument("job_id",type=int)

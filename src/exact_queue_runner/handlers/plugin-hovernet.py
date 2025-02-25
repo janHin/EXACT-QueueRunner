@@ -22,7 +22,7 @@ UPDATE_STEPS = 10 # after how many steps will we update the progress bar during 
 
 class NucleusInference(DetectionInference):
     def __init__(self, outdir:Path,**kwargs) -> None:
-        super().__init__(down_factor = 1, patch_size = 512, mean=None, std=None,
+        super().__init__(down_factor = 32, patch_size = 512, mean=None, std=None,
             detection_threshold = 0.55, **kwargs)
         if not outdir.is_dir():
             raise FileNotFoundError(f'could not find outdir: {outdir}')
@@ -47,14 +47,14 @@ class NucleusInference(DetectionInference):
         mpp = float(self.slide.properties['openslide.mpp-x'])
 
         #self.device = torch.device('cpu')
-
         self.model.model = self.model.model.to(self.device)
+        
         wsi_output = self.model.predict(
             [self.slide._filename],
             masks=None,
             save_dir=self.outdir / Path(self.slide._filename).stem,
             mode="wsi",
-            device= self.device,
+            device="cpu",
             crash_on_exception=True,
         )
 

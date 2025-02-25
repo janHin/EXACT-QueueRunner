@@ -56,12 +56,15 @@ def destroy(job_id:int):
     exact_connection.destroy_job(job_id)
 
 @cli.command()
-@click.argument("image",type=str)
-def remove_results(image:str):
+@click.option("--image_name",type=str,default=None)
+@click.option("--image_set",type=str,default=None)
+def remove_results(image_name:str,image_set:str):
     '''remove plugin results for image(s)'''
-    click.echo("debug")
-    logger.info('in remove_results')
+    logger.info('queue runner remove_results')
 
-    #click.prompt()
+    images = exact_connection.get_images(name=image_name,image_set=image_set)
 
-    exact_connection.get_image_sets()
+    for image in images:
+        if click.confirm('destroy plugin result for image %s with id %d?',
+            image.name,image.id):
+            exact_connection.destroy_results_for_imageid(image.id)

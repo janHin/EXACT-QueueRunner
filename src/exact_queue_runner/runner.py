@@ -20,7 +20,7 @@ from exact_sync.v1.configuration import Configuration
 from exact_sync.v1.api_client import ApiClient
 from exact_sync.v1.api.processing_api import ProcessingApi
 from exact_sync.v1.models import (PluginResultAnnotation, PluginResult,
-    PluginResultEntry, Plugin,PluginJob)
+    PluginResultEntry, Plugin,PluginJob, Image,Images,ImageSet,ImageSets)
 from exact_sync.v1.api.images_api import ImagesApi
 from exact_sync.v1.api.image_sets_api import ImageSetsApi
 from exact_sync.exact_enums import *
@@ -38,20 +38,6 @@ logger = logging.getLogger(__name__)
 
 class JobRemovedException(Exception):
     pass
-
-@dataclass
-class ImageMetadata():
-    #annotations: List[Any] Apparently not loaded by API?
-    filename: str
-    height: int
-    width: int
-    id: int
-    image_set: int
-    image_type: int
-    mpp: float
-    name: str
-    objective_power: float
-    time: datetime.datetime
 
 
 class ExactConnection():
@@ -126,30 +112,57 @@ class ExactConnection():
             if exc.status != 404:
                 raise exc
 
-    def get_image_sets(self):
-        logger.info('getting imageset metadatas')
-        imageset_dicts = self._imageset_api.list_image_sets(async_req=False)
-        logger.info('imagesets: %s',str(imageset_dicts))
-
-    def get_image_metadatas(self)->List[ImageMetadata]:
-        logger.info('getting image metadatas')
-        image_dicts = self._images_api.list_images(async_req=False)
-        return [ImageMetadata(**image_dict) for image_dict in image_dicts]
-
-    def get_image_id(self,image:str):
-        pass
-
-    def remove_results(self,image_id:int):
-        plugin_results = self._processing_api.list_plugin_results(asnyc_req=False)
+    def get_image_set(self,name:str)->ImageSet:
+        logger.info('getting imageset')
+        imagesets = self._imageset_api.list_image_sets(async_req=False).results
+        imagesets_filtered = [ims for ims in imagesets if ims.name == name]
+        if len(imagesets_filtered) <= 0:
+            raise KeyError(f'could not find image set with name {name}')
+        if len(imagesets_filtered) > 1:
+            raise KeyError(f'found multiple image sets with name {name}')
+        return imagesets_filtered[0]
         
-        def filter_func(plugin_result:PluginResult):
-            if image_id is not None and plugin_result.image != image_id:
-                return False
-            return True
+    def get_images(self,name:str=None,image_set:int|str=None)->List[Image]:
+        logger.info('getting image metadatas')
+        images = self._images_api.list_images(async_req=False).results
 
-        plugin_result_filtered = filter(filter_func,plugin_results)
-             
-        #self._processing_api.destroy_plugin_result()
+        if isinstance(image_set,int):
+            image_set_id = image_set
+        else:
+            image_set_id = self.get_image_set(image_set).id
+
+        def filter_func(image:Image)->bool:
+            if name is not None and image.name != name:
+                return False
+            if image_set_id is not None and image.image_set != image_set_id:
+                return False
+
+        images = [img for img in images if filter_func(img)]
+
+        return images
+
+    def get_plugin_results(self)->List[PluginResult]:
+        ''''''
+        plugin_results = self._processing_api.list_plugin_results(asnyc_req=False).results
+        return plugin_results
+
+    def destroy_results_for_imageid(self,image_id:int):
+        ''''''
+        plugin_results = self.get_plugin_results()
+
+        plugin_results_filtered = [plr for plr in plugin_results 
+            if plr.image == image_id]
+
+        if len(plugin_results_filtered) <= 0:
+            raise KeyError('found no entriee in plugin results for image id '
+                f'{image_id}')
+        if len(plugin_results_filtered) >1:
+            raise KeyboardInterrupt('found multiple entries for image id '
+                f'{image_id} in plugin results')
+
+        plugin_result_id = plugin_results_filtered[0].id
+        logger.info('deleting plugin result with id %d',plugin_result_id)
+        self._processing_api.destroy_plugin_result(plugin_result_id,async_req=False)
 
     def update_job_exception(self,job:PluginJob,exception:Exception):
         ''''''

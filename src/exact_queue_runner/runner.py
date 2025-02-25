@@ -143,7 +143,7 @@ class ExactConnection():
     def destroy_results_for_imageid(self,image_id:int):
         ''''''
         plugin_results = self._processing_api.list_plugin_results(
-            asnyc_req=False,image_id=image_id).results
+            async_req=False,image_id=image_id).results
 
         if len(plugin_results) <= 0:
             raise KeyError('found no entriee in plugin results for image id '

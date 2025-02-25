@@ -126,23 +126,26 @@ class ExactConnection():
     def get_images(self,name:str=None,image_set:int|str=None)->List[Image]:
         ''''''
         logger.info('getting images')
-        images = self._images_api.list_images(async_req=False).results
-
+        
         if isinstance(image_set,int):
             image_set_id = image_set
         else:
             image_set_id = self.get_image_set(image_set).id
         logger.info('image set id: %d',image_set_id)
 
-        def filter_func(image:Image)->bool:
-            logger.info('image %s',str(image))
-            if image_set_id is not None and image.image_set != image_set_id:
-                return False
-            if name is not None and image.filename != name:
-                return False
-            return True
-        images = [img for img in images if filter_func(img)]
-        logger.info('filtered images %s',str(images))
+        images = self._images_api.list_images(async_req=False,name=name,
+            image_set=image_set_id).results
+        logger.info('images %s',str(images))
+
+        # def filter_func(image:Image)->bool:
+        #     logger.info('image %s',str(image))
+        #     if image_set_id is not None and image.image_set != image_set_id:
+        #         return False
+        #     if name is not None and image.filename != name:
+        #         return False
+        #     return True
+        # images = [img for img in images if filter_func(img)]
+        # logger.info('filtered images %s',str(images))
         return images
 
     def get_plugin_results(self)->List[PluginResult]:

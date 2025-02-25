@@ -22,6 +22,7 @@ FMT_STRING='%(levelname)s:%(message)s'
 formatter = click_log.ColorFormatter(FMT_STRING)
 handler   = click_log.ClickHandler()
 handler.formatter = formatter
+logger.addHandler(handler)
 
 #TODO: Handle this somehow nicer?
 from .config import username,password,serverurl

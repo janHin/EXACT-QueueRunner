@@ -142,7 +142,7 @@ class ExactConnection():
             return True
 
         images = [img for img in images if filter_func(img)]
-        logger.info('filtered images %s',images)
+        logger.info('filtered images %s',str(images))
         return images
 
     def get_plugin_results(self)->List[PluginResult]:

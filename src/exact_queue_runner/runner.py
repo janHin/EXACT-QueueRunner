@@ -140,7 +140,7 @@ class ExactConnection():
             if name is not None and image.filename != name:
                 return False
             return True
-
+        logger.info('before filtering')
         images = [img for img in images if filter_func(img)]
         logger.info('filtered images %s',str(images))
         return images

@@ -7,6 +7,8 @@ import time
 import socket
 import string
 import random
+from dataclasses import dataclass
+from typing import List,Any
 
 #3rd party imports
 import numpy as np
@@ -20,6 +22,7 @@ from exact_sync.v1.api.processing_api import ProcessingApi
 from exact_sync.v1.models import (PluginResultAnnotation, PluginResult,
     PluginResultEntry, Plugin,PluginJob)
 from exact_sync.v1.api.images_api import ImagesApi
+from exact_sync.v1.api.image_sets_api import ImageSetsApi
 from exact_sync.exact_enums import *
 from exact_sync.exact_errors import *
 from exact_sync.exact_manager import *
@@ -36,6 +39,21 @@ logger = logging.getLogger(__name__)
 class JobRemovedException(Exception):
     pass
 
+@dataclass
+class ImageMetadata():
+    #annotations: List[Any] Apparently not loaded by API?
+    filename: str
+    height: int
+    width: int
+    id: int
+    image_set: int
+    image_type: int
+    mpp: float
+    name: str
+    objective_power: float
+    time: datetime.datetime
+
+
 class ExactConnection():
 
     def __init__(self,configuration:Configuration) -> None:
@@ -45,6 +63,7 @@ class ExactConnection():
         self._client         = ApiClient(configuration=configuration)
         self._processing_api = ProcessingApi(self._client)
         self._images_api     = ImagesApi(self._client)
+        self._imageset_api    = ImageSetsApi(self._client)
 
     @property
     def api_dict(self):
@@ -107,10 +126,18 @@ class ExactConnection():
             if exc.status != 404:
                 raise exc
 
+    def get_image_sets(self):
+        logger.info('getting imageset metadatas')
+        imageset_dicts = self._imageset_api.list_image_sets(async_req=False)
+        logger.info('imagesets: %s',str(imageset_dicts))
+
+    def get_image_metadatas(self)->List[ImageMetadata]:
+        logger.info('getting image metadatas')
+        image_dicts = self._images_api.list_images(async_req=False)
+        return [ImageMetadata(**image_dict) for image_dict in image_dicts]
+
     def get_image_id(self,image:str):
-        logger.info('getting images')
-        images = self._images_api.list_images(async_req=False)
-        logger.info('images: %s',str(images))
+        pass
 
     def remove_results(self,image_id:int):
         plugin_results = self._processing_api.list_plugin_results(asnyc_req=False)

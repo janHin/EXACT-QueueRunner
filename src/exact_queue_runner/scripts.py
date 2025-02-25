@@ -61,4 +61,7 @@ def remove_results(image:str):
     '''remove plugin results for image(s)'''
     click.echo("debug")
     logger.info('in remove_results')
-    exact_connection.get_image_id('test')
+
+    #click.prompt()
+
+    exact_connection.get_image_sets()

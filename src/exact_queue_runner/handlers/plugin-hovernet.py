@@ -19,6 +19,7 @@ from .utils.inference_utils import DetectionInference
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
+logger = logging.getLogger(__name__)
 
 class NucleusInference(DetectionInference):
     def __init__(self, outdir:Path,**kwargs) -> None:
@@ -30,7 +31,7 @@ class NucleusInference(DetectionInference):
         self.outdir = outdir
 
     def configure_model(self):
-        logging.info('Loading model')
+        logger.info('Loading model')
         model = NucleusInstanceSegmentor(
             pretrained_model="hovernet_fast-pannuke",
             num_loader_workers=0,
@@ -56,7 +57,7 @@ class NucleusInference(DetectionInference):
         )
 
         wsi_pred = joblib.load(f"{wsi_output[0][1]}.dat")
-        logging.info("Number of detected nuclei: %d", len(wsi_pred))
+        logger.info("Number of detected nuclei: %d", len(wsi_pred))
         # free up memory
         del self.model
         gc.collect()
@@ -76,13 +77,13 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
             outdir.mkdir(parents=True)
 
     image = apis['images'].retrieve_image(job.image)
-    logging.info('Retrieving image set for job %d ' % job.id)
+    logger.info('Retrieving image set for job %d ' % job.id)
 
     update_progress(0.01)
     unlinklist=[] # files to delete
     imageset = image.image_set
 
-    logging.info('Checking annotation type availability for job %d' % job.id)
+    logger.info('Checking annotation type availability for job %d' % job.id)
     annotationtypes = {anno_type['name']:anno_type
         for anno_type in apis['manager'].retrieve_annotationtypes(imageset)}
                 
@@ -97,7 +98,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
     if (annoclass is None):
         error_message = 'Error: Missing annotation type'
         error_detail = 'Annotation class Nucleus is required but does not exist for imageset '+str(imageset)
-        logging.error(str(error_detail))
+        logger.error(str(error_detail))
         apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
         return False
     
@@ -106,10 +107,10 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
         if not os.path.exists(tpath):
             if ('.mrxs' in str(image.filename).lower()):
                 tpath += '.zip'
-            logging.info('Downloading image %s to %s' % (image.filename,tpath))
+            logger.info('Downloading image %s to %s' % (image.filename,tpath))
             apis['images'].download_image(job.image, target_path=tpath, original_image=False)
             if ('.mrxs' in str(image.filename).lower()):
-                logging.info('Unzipping MRXS image %s' % (tpath))
+                logger.info('Unzipping MRXS image %s' % (tpath))
 
                 with zipfile.ZipFile(tpath, 'r') as zip_ref:
                     zip_ref.extractall('tmp/')
@@ -122,26 +123,26 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
     except Exception as e:
         error_message = 'Error: '+str(type(e))+' while downloading'
         error_detail = str(e)
-        logging.error(str(e))
+        logger.error(str(e))
         apis['processing'].partial_update_plugin_job(id=job.id, 
             error_message=error_message, error_detail=error_detail)
         return False
 
     try:
-        logging.info('Prediction for job %d' % job.id)
+        logger.info('Prediction for job %d' % job.id)
         inference_module = NucleusInference(outdir,fname = tpath, update_progress = update_progress)
         stage1_results = inference_module.process()
         #unlinklist.append(os.path.join(os.getcwd(), 'QueueRunner', 'tmp', Path(image.filename).stem))
     except Exception as e:
         error_message = 'Error: '+str(type(e))+' while processing WSI'
         error_detail = str(e)
-        logging.error(str(e))
+        logger.error(str(e))
         apis['processing'].partial_update_plugin_job(id=job.id,
             error_message=error_message, error_detail=error_detail)
         return False
 
     try:
-        logging.info('Creating plugin result')
+        logger.info('Creating plugin result')
         existing = [j.id for j in apis['processing'].list_plugin_results().results if j.job==job.id]
         if len(existing)>0:
             apis['processing'].destroy_plugin_result(existing[0])
@@ -151,11 +152,11 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
         result = PluginResult(job=job.id, image=image.id, plugin=job.plugin, entries=[])
         result = apis['processing'].create_plugin_result(body=result)
 
-        logging.info('Creating plugin entry')
+        logger.info('Creating plugin entry')
     except Exception as e:
         error_message = 'Error: '+str(type(e))+' while creating plugin result'
         error_detail = str(e)+f'Job {job.id}, Image {image.id}, Pliugin {job.plugin}'
-        logging.error(str(e))
+        logger.error(str(e))
 
         apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
         return False
@@ -168,7 +169,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
     except Exception as e:
         error_message = 'Error: '+str(type(e))+' while creating plugin result entry'
         error_detail = str(e)+f'PluginResult {result.id}'
-        logging.error(str(e))
+        logger.error(str(e))
         
         apis['processing'].partial_update_plugin_job(id=job.id, error_message=error_message, error_detail=error_detail)
         return False
@@ -199,7 +200,7 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
     except Exception as e:
         error_message = 'Error: '+str(type(e))+' while uploading the annotations'
         error_detail = str(e)
-        logging.error(str(e))
+        logger.error(str(e))
         
         apis['processing'].partial_update_plugin_job(id=job.id,
             error_message=error_message, error_detail=error_detail)
@@ -211,8 +212,8 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable,
             os.unlink(f)
     
     except Exception as e:
-        logging.error('Error while deleting files: '+str(e)+'. Continuing anyway.')
-    
+        logger.error('Error while deleting files: '+str(e)+'. Continuing anyway.')
+
     return True
 
 

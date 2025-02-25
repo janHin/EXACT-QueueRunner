@@ -137,37 +137,22 @@ class ExactConnection():
             image_set=image_set_id).results
         logger.info('images %s',str(images))
 
-        # def filter_func(image:Image)->bool:
-        #     logger.info('image %s',str(image))
-        #     if image_set_id is not None and image.image_set != image_set_id:
-        #         return False
-        #     if name is not None and image.filename != name:
-        #         return False
-        #     return True
-        # images = [img for img in images if filter_func(img)]
-        # logger.info('filtered images %s',str(images))
         return images
 
-    def get_plugin_results(self)->List[PluginResult]:
-        ''''''
-        plugin_results = self._processing_api.list_plugin_results(asnyc_req=False).results
-        return plugin_results
 
     def destroy_results_for_imageid(self,image_id:int):
         ''''''
-        plugin_results = self.get_plugin_results()
+        plugin_results = self._processing_api.list_plugin_results(
+            asnyc_req=False,image_id=image_id).results
 
-        plugin_results_filtered = [plr for plr in plugin_results 
-            if plr.image == image_id]
-
-        if len(plugin_results_filtered) <= 0:
+        if len(plugin_results) <= 0:
             raise KeyError('found no entriee in plugin results for image id '
                 f'{image_id}')
-        if len(plugin_results_filtered) >1:
+        if len(plugin_results) >1:
             raise KeyboardInterrupt('found multiple entries for image id '
                 f'{image_id} in plugin results')
 
-        plugin_result_id = plugin_results_filtered[0].id
+        plugin_result_id = plugin_results[0].id
         logger.info('deleting plugin result with id %d',plugin_result_id)
         self._processing_api.destroy_plugin_result(plugin_result_id,async_req=False)
 

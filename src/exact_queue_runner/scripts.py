@@ -69,6 +69,5 @@ def remove_results(image_name:str,image_set:str):
     images = exact_connection.get_images(name=image_name,image_set=image_set)
 
     for image in images:
-        if click.confirm('destroy plugin result for image %s with id %d?',
-            image.name,image.id):
+        if click.confirm(f'destroy plugin result for image {image.name} with id {image.id}?'):
             exact_connection.destroy_results_for_imageid(image.id)

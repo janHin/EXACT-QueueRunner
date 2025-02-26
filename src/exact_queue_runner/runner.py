@@ -29,11 +29,11 @@ from exact_sync.exact_manager import *
 from exact_sync.v1.rest import ApiException
 
 #local imports
-from . import handlers
+from .plugins.registry import get_plugin_registry
 from .utils import iter_namespace, get_workername
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 class JobRemovedException(Exception):
@@ -77,7 +77,9 @@ class ExactConnection():
 
                 self._processing_api.create_plugin(**plugin_entries)
 
-
+    def retrieve_job(self,job_id:int)->PluginJob:
+        job = self._processing_api.retrieve_plugin_job(job_id)
+        return job
 
     def get_next_job(self)->PluginJob:
         ''''''
@@ -89,7 +91,7 @@ class ExactConnection():
         for job in unprocessed_jobs:
             # Get update about job
             try:
-                job = self._processing_api.retrieve_plugin_job(id=job.id)
+                self.retrieve_job(job.id)
             except:
                 logger.warning('Job unexpectedly removed from queue: '+str(job.id))
                 continue
@@ -189,16 +191,8 @@ class PluginHandler():
     @staticmethod
     def get_local_plugins():
         '''get local plugin modules from handlers subfolder'''
-        plugins={}
-
-        for finder, name, ispkg in sorted(iter_namespace(handlers)):
-            try:
-                logger.info('activating plugin %s',name)
-                mod = importlib.import_module(name)
-                plugins[name] = mod.plugin
-            except Exception as e:
-                raise RuntimeError('+++ Unable to activate plugin: '+name) from e
-        return  plugins
+        plugins=get_plugin_registry()
+        return plugins
 
     def get_plugin_for_job(self,job:PluginJob):
         for plugin in self._local_plugins.values():
@@ -271,7 +265,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
     
     logger.info('Job %s: Attached worker info: %s',str(job.id),
         str(job.attached_worker))
-    logger.info(f'Job {job.id}: Claiming job.')
+    logger.info('Job %d: Claiming job.',job.id)
     
     exact_connection.update_job_worker(job,worker_name)
 
@@ -286,7 +280,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
     
     logger.info('Claiming was: %.2f seconds ago.',
         (datetime.datetime.now()-job.updated_time).seconds)
-    logger.info('Successfully claimed job %d' % job.id)
+    logger.info('Successfully claimed job %d', job.id)
 
     try:
         process_job(exact_connection,job,plugin,outdir)
@@ -296,7 +290,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         raise e from e
         
 
-    logger.info('unclaiming job %d' % job.id)     
+    logger.info('unclaiming job %d', job.id)
     # Break for loop to achieve refreshing of jobs list
 
 def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
@@ -307,7 +301,7 @@ def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
     plugin_handler = PluginHandler(exact_connection)
 
     worker_name = get_workername()
-    logger.info('This is worker: '+worker_name)
+    logger.info('This is worker: %s',worker_name)
 
     n_jobs = 0
     idle_time = 0.
@@ -334,5 +328,5 @@ def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
         # restart
         logging.error('Caught exception.',exc_info=True)
         if restart:
-            run_loop()
+            run_loop(exact_connection, job_limit, restart, idle_limit, outdir)
         raise e

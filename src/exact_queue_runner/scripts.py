@@ -14,7 +14,7 @@ from exact_sync.v1.configuration import Configuration
 from ._version import __version__
 from .runner import run_loop
 from .runner import ExactConnection
-
+from .runner import PluginHandler
 
 logger = logging.root
 
@@ -63,7 +63,7 @@ def remove_results(image_name:str,image_set:str):
     logger.info('queue runner remove_results')
 
     if image_name is None and image_set is None:
-        click.BadOptionUsage('image_name image_set',
+        raise click.BadOptionUsage('image_name image_set',
             'either image_name or image_set have to be specified!')
 
     images = exact_connection.get_images(name=image_name,image_set=image_set)
@@ -71,3 +71,24 @@ def remove_results(image_name:str,image_set:str):
     for image in images:
         if click.confirm(f'destroy plugin result for image {image.name} with id {image.id}?'):
             exact_connection.destroy_results_for_imageid(image.id)
+
+@cli.command()
+@click.argument('job_id',help='job id')
+@click.argument('outdir',help='output directory to search',
+    type=click.Path(exists=True,path_type=Path))
+def upload_job_results(job_id:int,outdir:Path):
+    ''''''
+    logger.info('trying to salvage some results for job %d',job_id)
+
+    plugin_handler = PluginHandler(exact_connection)
+
+    job = exact_connection.retrieve_job(job_id)
+    plugin_dict = plugin_handler.get_plugin_for_job(job)
+
+    def update_progress_func(progress:float):
+        exact_connection.update_job_progress(job,progress)
+
+    plugin_instance = plugin_dict['class'](exact_connection.api_dict,
+        update_progress_func,outdir)
+    plugin_instance.continue_inference(job)
+    

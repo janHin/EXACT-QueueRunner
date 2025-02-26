@@ -22,6 +22,7 @@ class PluginHandler():
         '''get local plugin modules from handlers subfolder'''
         logger.info('loading plugins')
         plugins=get_plugin_registry()
+        logger.debug('loaded plugins: %s',repr(plugins))
         return plugins
 
     def get_plugin_for_job(self,job:PluginJob)->PluginBase:

@@ -12,6 +12,7 @@ from .. import plugins
 logger = logging.getLogger(__name__)
 __registered_plugins = {}
 
+logger.debug('in registry package')
 
 def __iter_namespace(ns_pkg):
     # Specifying the second argument (prefix) to iter_modules makes the

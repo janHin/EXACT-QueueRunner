@@ -16,7 +16,7 @@ from ..exact_connection import ExactConnection
 
 logger = logging.getLogger(__name__)
 
-class PluginMeta(type):
+class PluginMeta(abc.ABCMeta):
     
     def __getitem__(cls,name:str):
         return cls.exact_fields_dict[name]

@@ -22,9 +22,6 @@ def __iter_namespace(ns_pkg):
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
 
 def __register_plugins():
-    print(f'registering plugins {plugins.__path__} {plugins.__name__}')
-    print(f'iter namespace {list(__iter_namespace(plugins))}')
-    
     n_registered = 0
     for _ , name, _ in sorted(__iter_namespace(plugins)):
         if not name.split('.')[-1].startswith('plugin'):

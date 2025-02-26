@@ -1,11 +1,22 @@
 '''entrypoint scripts'''
+
+import logging
+import click_log
+
+logger = logging.root
+
+FMT_STRING='%(levelname)s:%(message)s'
+formatter = click_log.ColorFormatter(FMT_STRING)
+handler   = click_log.ClickHandler()
+handler.formatter = formatter
+logger.addHandler(handler)
+
 #STL imports
 import logging
 from pathlib import Path
 
 #3rd party imports
 import click
-import click_log
 
 #Exact imports
 from exact_sync.v1.configuration import Configuration
@@ -16,13 +27,7 @@ from .runner import run_loop
 from .runner import ExactConnection
 from .runner import PluginHandler
 
-logger = logging.root
 
-FMT_STRING='%(levelname)s:%(message)s'
-formatter = click_log.ColorFormatter(FMT_STRING)
-handler   = click_log.ClickHandler()
-handler.formatter = formatter
-logger.addHandler(handler)
 
 #TODO: Handle this somehow nicer?
 from .config import username,password,serverurl

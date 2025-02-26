@@ -85,10 +85,11 @@ class NucleusInference(DetectionInference):
 class Plugin(abc.ABC):
     
     def __init__(self,apis:dict,update_progress:Callable=None) -> None:
-        super().__init__(apis)
-        self.apis = apis    
+        super().__init__()
+        self.apis = apis
         self.update_progress_func = update_progress
-        atexit.register()
+
+        atexit.register(self._cleanup)
 
         self._unlinklist = []
 

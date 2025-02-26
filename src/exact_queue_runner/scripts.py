@@ -73,9 +73,8 @@ def remove_results(image_name:str,image_set:str):
             exact_connection.destroy_results_for_imageid(image.id)
 
 @cli.command()
-@click.argument('job_id',help='job id')
-@click.argument('outdir',help='output directory to search',
-    type=click.Path(exists=True,path_type=Path))
+@click.argument('job_id')
+@click.argument('outdir', type=click.Path(exists=True,path_type=Path))
 def upload_job_results(job_id:int,outdir:Path):
     ''''''
     logger.info('trying to salvage some results for job %d',job_id)

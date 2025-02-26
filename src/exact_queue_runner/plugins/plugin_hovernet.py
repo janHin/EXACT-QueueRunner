@@ -1,14 +1,9 @@
 #STL imports
-import os
 import gc
 from pathlib import Path
-import abc
-import atexit
 
 #3rd party imports
 from tiatoolbox.models.engine.nucleus_instance_segmentor import NucleusInstanceSegmentor
-from typing import Callable
-from pathlib import Path
 from tqdm import tqdm
 import logging
 import zipfile
@@ -20,6 +15,8 @@ from exact_sync.v1.models import (PluginResultAnnotation, PluginResult,
 #local imports
 from .utils.inference_utils import DetectionInference
 from .utils.exception import PluginExcpetion
+from .registry import registerplugin
+from .pluginbase import PluginBase
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
@@ -82,54 +79,28 @@ class NucleusInference(DetectionInference):
             }
         return wsi_pred
 
-class Plugin(abc.ABC):
-    
-    def __init__(self,apis:dict,update_progress:Callable=None) -> None:
-        super().__init__()
-        self.apis = apis
-        self.update_progress_func = update_progress
+@registerplugin(
+{
+    'name':'HoverNet Nucleus Detection',
+    'author':'Frauke Wilm', 
+    'package':'science.imig.hovernet', 
+    'contact':'frauke.wilm@fau.de', 
+    'abouturl':'https://github.com/TissueImageAnalytics/tiatoolbox/', 
+    'icon':'QueueRunner/handlers/logos/hovernet_logo.png',
+    'products':[],
+    'results':[],
+}
+)
+class HovernetPlugin(PluginBase):
 
-        atexit.register(self._cleanup)
+    def __init__(self, apis: dict,outdir:Path) -> None:
+        super().__init__(apis)
 
-        self._unlinklist = []
+        if outdir is None:
+            outdir = Path.cwd() / 'QueueRunner/tmp'
+            if not outdir.is_dir():
+                outdir.mkdir(parents=True)
 
-    def _cleanup(self):
-        logger.info('cleaning up files')
-        for path in self._unlinklist:
-            if isinstance(str,path):
-                path = Path(path)
-            logger.debug(f'deleting path {path}')
-            path.unlink(missing_ok=True)
-
-    def __delattr__(self, name: str) -> None:
-        return super().__delattr__(name)
-
-    def unlink_path(self,path:Path):
-        self._unlinklist.append(path)
-
-
-
-    @abc.abstractmethod
-    def do_inference(self,job:PluginJob):
-        pass
-
-    def inference(self,job:PluginJob):
-        try:
-            self.do_inference(job)
-        except PluginExcpetion as e:
-            self.apis['processing'].partial_update_plugin_job(id=job.id,
-                error_message=e.message, error_detail=e.detail)
-            raise e
-        except Exception as e:
-            error_message=f'Exception {str(type(e))}'
-            self.apis['processing'].partial_update_plugin_job(id=job.id,
-                error_message=error_message, error_detail=str(e))
-            raise e
-    
-class HovernetPlugin(Plugin):
-
-    def __init__(self, apis: dict,update_progress:Callable,outdir:Path) -> None:
-        super().__init__(apis,update_progress)
         self.outdir = outdir
 
         self.annoationtype = None        
@@ -144,12 +115,15 @@ class HovernetPlugin(Plugin):
         self.image_file = self._download_image(error_exists=error_image_exists)
 
     def do_inference(self,job:PluginJob):
-        self.update_progress_func(0.01)
+        self.update_job_progress(job,0.01)
         self._setup_data(job,error_image_exists=True)
-        self.update_progress_func(0.05)
+        self.update_job_progress(job,0.05)
+
+        def update_progress_func(progress:float):
+            self.update_job_progress(job,progress)
 
         inference_module = NucleusInference(self.outdir,fname = self.image_file,
-            update_progress = self.update_progress_func)
+            update_progress = update_progress_func)
         inference_results_file = inference_module.process()
         inference_results      = inference_module.load_predictions(inference_results_file)
 
@@ -161,8 +135,11 @@ class HovernetPlugin(Plugin):
         self._setup_data(job,error_image_exists=False)
 
         #TODO: still some hardcoding in here
+        def update_progress_func(progress:float):
+            self.update_job_progress(job,progress)
+
         inference_module = NucleusInference(self.outdir,fname = self.image_file,
-            update_progress = self.update_progress_func)
+            update_progress = update_progress_func)
         inference_results_file = inference_module.outdir / self.image_file.stem / '0.dat'
         if not inference_results_file.is_file():
             raise FileNotFoundError('could not find inference file '
@@ -281,28 +258,4 @@ class HovernetPlugin(Plugin):
                 score=score)
             anno = self.apis['processing'].create_plugin_result_annotation(
                 body=anno, async_req=True)
-
-       
-def entrypoint(apis:dict, job:PluginJob, update_progress:Callable,
-        outdir:Path = None)->bool:
-    
-    if outdir is None:
-        outdir = Path.cwd() / 'QueueRunner/tmp'
-        if not outdir.is_dir():
-            outdir.mkdir(parents=True)
-    
-    plugin = HovernetPlugin(apis,update_progress,outdir)
-    plugin.inference(job)
-
-
-plugin = {  'name':'HoverNet Nucleus Detection',
-            'author':'Frauke Wilm', 
-            'package':'science.imig.hovernet', 
-            'contact':'frauke.wilm@fau.de', 
-            'abouturl':'https://github.com/TissueImageAnalytics/tiatoolbox/', 
-            'icon':'QueueRunner/handlers/logos/hovernet_logo.png',
-            'products':[],
-            'results':[],
-            'inference_func' : entrypoint,
-            'class': HovernetPlugin}
 

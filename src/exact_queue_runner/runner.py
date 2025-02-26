@@ -1,18 +1,12 @@
 #STL imports
 import datetime
 import logging
-import pkgutil
-import importlib
 import time
-import socket
-import string
 import random
-from dataclasses import dataclass
-from typing import List,Any
+from pathlib import Path
 
 #3rd party imports
 import numpy as np
-
 import h5py
 
 #exact imports
@@ -23,183 +17,14 @@ from exact_sync.v1.models import (PluginResultAnnotation, PluginResult,
     PluginResultEntry, Plugin,PluginJob, Image,Images,ImageSet,ImageSets)
 from exact_sync.v1.api.images_api import ImagesApi
 from exact_sync.v1.api.image_sets_api import ImageSetsApi
-from exact_sync.exact_enums import *
-from exact_sync.exact_errors import *
-from exact_sync.exact_manager import *
 from exact_sync.v1.rest import ApiException
 
 #local imports
-from .plugins.registry import get_plugin_registry
 from .utils import get_workername
-
+from .exact_connection import ExactConnection
+from .plugin_handler import PluginHandler
 
 logger = logging.getLogger(__name__)
-
-
-class JobRemovedException(Exception):
-    pass
-
-
-class ExactConnection():
-
-    def __init__(self,configuration:Configuration) -> None:
-        self._manager        = ExactManager(username=configuration.username,   
-            password=configuration.password, serverurl=configuration.host,
-            loglevel=100)
-        self._client         = ApiClient(configuration=configuration)
-        self._processing_api = ProcessingApi(self._client)
-        self._images_api     = ImagesApi(self._client)
-        self._imageset_api    = ImageSetsApi(self._client)
-
-    @property
-    def api_dict(self):
-        return {
-            'images':     self._images_api,
-            'processing': self._processing_api,
-            'manager' :   self._manager,
-        }
-
-    def get_exact_plugins(self):
-        plugins_exact = {plugin.package: plugin for plugin in 
-            self._processing_api.list_plugins().results}
-        return plugins_exact
-
-    def register_plugins(self,plugins):
-        '''register plugins with exact'''
-        plugins_exact = self.get_exact_plugins()
-        for k in plugins:
-            plugin = plugins[k].plugin
-
-            if (plugin['package'] not in plugins_exact):
-                # Missing plugin on EXACT, let's register it.
-                plugin_entries = {k:v for k,v in 
-                    zip(plugin.keys(),plugin.values()) if k != 'inference_func'}
-
-                self._processing_api.create_plugin(**plugin_entries)
-
-    def retrieve_job(self,job_id:int)->PluginJob:
-        job = self._processing_api.retrieve_plugin_job(job_id)
-        return job
-
-    def get_next_job(self)->PluginJob:
-        ''''''
-        jobs=self._processing_api.list_plugin_jobs(limit=1e3).results
-        # Only work on jobs that are not already completed or failed with an error
-        unprocessed_jobs = [job for job in jobs if job.processing_complete != 100]
-        logger.info('Job queue contains '+str(len(unprocessed_jobs))+' unprocessed jobs')
-
-        for job in unprocessed_jobs:
-            # Get update about job
-            try:
-                self.retrieve_job(job.id)
-            except:
-                logger.warning('Job unexpectedly removed from queue: '+str(job.id))
-                continue
-            return job
-        return None
-
-    def destroy_job(self,job_id:int):
-        ''''''
-        try:
-            job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
-        except ApiException as exc:
-            if exc.status == 404:
-                raise JobRemovedException(f'job ({job_id}) not found') from exc      
-            raise exc
-        self._processing_api.destroy_plugin_job(id=job_id,async_req=False)
-        time.sleep(.5)
-        try:
-            job = self._processing_api.retrieve_plugin_job(job_id,async_req=False)
-        except ApiException as exc:
-            if exc.status != 404:
-                raise exc
-
-    def get_image_set(self,name:str)->ImageSet:
-        ''''''
-        logger.info('getting imageset')
-        imagesets = self._imageset_api.list_image_sets(async_req=False).results
-        imagesets_filtered = [ims for ims in imagesets if ims.name == name]
-        if len(imagesets_filtered) <= 0:
-            raise KeyError(f'could not find image set with name {name}')
-        if len(imagesets_filtered) > 1:
-            raise KeyError(f'found multiple image sets with name {name}')
-        return imagesets_filtered[0]
-        
-    def get_images(self,name:str=None,image_set:int|str=None)->List[Image]:
-        ''''''
-        logger.info('getting images')
-        
-        if isinstance(image_set,int):
-            image_set_id = image_set
-        else:
-            image_set_id = self.get_image_set(image_set).id
-        logger.info('image set id: %d',image_set_id)
-
-        images = self._images_api.list_images(async_req=False,name=name,
-            image_set=image_set_id).results
-        logger.info('images %s',str(images))
-
-        return images
-
-
-    def destroy_results_for_imageid(self,image_id:int):
-        ''''''
-        plugin_results = self._processing_api.list_plugin_results(
-            async_req=False,image_id=image_id).results
-
-        if len(plugin_results) <= 0:
-            raise KeyError('found no entriee in plugin results for image id '
-                f'{image_id}')
-        if len(plugin_results) >1:
-            raise KeyboardInterrupt('found multiple entries for image id '
-                f'{image_id} in plugin results')
-
-        plugin_result_id = plugin_results[0].id
-        logger.info('deleting plugin result with id %d',plugin_result_id)
-        self._processing_api.destroy_plugin_result(plugin_result_id,async_req=False)
-
-    def update_job_exception(self,job:PluginJob,exception:Exception):
-        ''''''
-        error_message = f'Exception: {str(type(exception))}'
-        error_detail = str(exception)
-        self._processing_api.partial_update_plugin_job(id=job.id,
-            error_message=error_message, error_detail=error_detail,
-            async_req=False)
-
-    def update_job_progress(self,job:PluginJob,progress:float):
-        ''''''
-        self._processing_api.partial_update_plugin_job(id=job.id,
-            processing_complete=progress, 
-            updated_time=datetime.datetime.now())
-    
-    def update_job_worker(self,job:PluginJob,worker:str):
-        ''''''
-        self._processing_api.partial_update_plugin_job(id=job.id,
-            attached_worker=worker, updated_time=datetime.datetime.now())
-
-    def update_job_released(self,job:PluginJob):
-        ''''''
-        self._processing_api.partial_update_plugin_job(id=job.id,
-            error_message=None, error_detail=None, attached_worker=None)
-
-class PluginHandler():
-
-    def __init__(self,exact_connection:ExactConnection) -> None:
-        self._local_plugins = PluginHandler.get_local_plugins()
-        self._exact_plugins = exact_connection.get_exact_plugins()
-
-    @staticmethod
-    def get_local_plugins():
-        '''get local plugin modules from handlers subfolder'''
-        logger.info('loading plugins')
-        plugins=get_plugin_registry()
-        return plugins
-
-    def get_plugin_for_job(self,job:PluginJob):
-        for plugin in self._local_plugins.values():
-            if job.plugin == self._exact_plugins[plugin['package']].id:
-                return plugin
-        raise KeyError(f'no plugin found for job {job}')
 
 
 def is_valid_job(job:PluginJob)->bool:

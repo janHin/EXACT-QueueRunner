@@ -27,8 +27,6 @@ from .runner import run_loop
 from .runner import ExactConnection
 from .runner import PluginHandler
 
-
-
 #TODO: Handle this somehow nicer?
 from .config import username,password,serverurl
 configuration = Configuration()

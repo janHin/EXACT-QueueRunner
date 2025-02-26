@@ -43,26 +43,26 @@ def is_valid_job(job:PluginJob)->bool:
         return False
     return True
 
-def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
-    outdir:Path)->bool:
-    '''
-    '''
+# def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
+#     outdir:Path)->bool:
+#     '''
+#     '''
 
-    def update_progress(progress:float):
-        exact_connection.update_job_progress(job,progress)
+#     def update_progress(progress:float):
+#         exact_connection.update_job_progress(job,progress)
 
-    try:
-        success = plugin['inference_func'](apis=exact_connection.api_dict, job=job,
-            update_progress=update_progress,outdir=outdir)
-        if not success:
-            raise RuntimeError(f'encountered error running plugin {plugin["name"]}')
-    except Exception as e:
-        logger.error('encountered error (%s) running inference_func'
-            ' for %s',str(e),plugin['name'])
-        exact_connection.update_job_exception(job,e)
-        raise e
+#     try:
+#         success = plugin['inference_func'](apis=exact_connection.api_dict, job=job,
+#             update_progress=update_progress,outdir=outdir)
+#         if not success:
+#             raise RuntimeError(f'encountered error running plugin {plugin["name"]}')
+#     except Exception as e:
+#         logger.error('encountered error (%s) running inference_func'
+#             ' for %s',str(e),plugin['name'])
+#         exact_connection.update_job_exception(job,e)
+#         raise e
 
-    exact_connection.update_job_progress(job,100.0)
+   
 
 def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         worker_name:str,outdir:Path)->bool:
@@ -78,12 +78,14 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         logger.info("job %s not valid",str(job.id))
         return False
 
-    plugin = plugin_handler.get_plugin_for_job(job)
+    plugin_type = plugin_handler.get_plugin_for_job(job)
 
-    if plugin is None:
+    if plugin_type is None:
         logger.info('no plugin to process job %s (plugin_id:%s)',
             str(job.id),str(job.plugin))
         return False
+
+    plugin_instance = plugin_type(exact_connection.api_dict,outdir)
 
     logger.info('Job %s: Last update for this job was: %s seconds ago',
         str(job.id),
@@ -109,7 +111,9 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
     logger.info('Successfully claimed job %d', job.id)
 
     try:
-        process_job(exact_connection,job,plugin,outdir)
+        plugin_instance.inference(job)
+        #process_job(exact_connection,job,plugin,outdir)
+        exact_connection.update_job_progress(job,100.0)
         exact_connection.update_job_released(job)
     except Exception as e:
 

@@ -191,6 +191,7 @@ class PluginHandler():
     @staticmethod
     def get_local_plugins():
         '''get local plugin modules from handlers subfolder'''
+        logger.info('loading plugins')
         plugins=get_plugin_registry()
         return plugins
 

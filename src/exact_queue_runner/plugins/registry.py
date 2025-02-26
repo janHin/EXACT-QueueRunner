@@ -23,7 +23,6 @@ def __iter_namespace(ns_pkg):
 
 def __register_plugins():
     logger.info('registering plugins')
-    
     n_registered = 0
     for _ , name, _ in sorted(__iter_namespace(plugins)):
         if not name.startswith('plugin'):

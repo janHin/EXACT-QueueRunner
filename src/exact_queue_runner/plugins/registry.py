@@ -23,7 +23,7 @@ def __iter_namespace(ns_pkg):
 
 def __register_plugins():
     print(f'registering plugins {plugins.__path__} {plugins.__name__}')
-    print(f'iter namespace {__iter_namespace(plugins)}')
+    print(f'iter namespace {list(__iter_namespace(plugins))}')
     
     n_registered = 0
     for _ , name, _ in sorted(__iter_namespace(plugins)):

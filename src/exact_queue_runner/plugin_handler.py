@@ -7,7 +7,7 @@ from exact_sync.v1.models import PluginJob
 #local imports
 from .exact_connection import ExactConnection
 from .plugins.registry import get_plugin_registry
-from .plugins.pluginbase import PluginBase
+from .plugins.pluginbase import PluginBase,PluginType
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class PluginHandler():
         logger.debug('loaded plugins: %s',repr(plugins))
         return plugins
 
-    def get_plugin_for_job(self,job:PluginJob)->PluginBase:
+    def get_plugin_for_job(self,job:PluginJob)->PluginType:
         for plugin in self._local_plugins.values():
             if job.plugin == self._exact_plugins[plugin['package']].id:
                 return plugin

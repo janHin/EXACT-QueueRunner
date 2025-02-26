@@ -34,9 +34,9 @@ def is_valid_job(job:PluginJob)->bool:
             str(job.error_message))
         return False
 
-    if job.result is not None:
-        logger.info('job (%d) already has result attached',job.id)
-        return False
+    #if job.result is not None:
+    #    logger.info('job (%d) already has result attached',job.id)
+    #    return False
 
     if job.attached_worker is not None and (len(job.attached_worker)>0):
         logger.info('job (%d) already has result attached',job.id)
@@ -85,7 +85,7 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
             str(job.id),str(job.plugin))
         return False
 
-    plugin_instance = plugin_type(exact_connection.api_dict,outdir)
+    plugin_instance = plugin_type(exact_connection,outdir)
 
     logger.info('Job %s: Last update for this job was: %s seconds ago',
         str(job.id),

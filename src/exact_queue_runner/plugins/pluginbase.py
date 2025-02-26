@@ -16,12 +16,12 @@ from ..exact_connection import ExactConnection
 
 logger = logging.getLogger(__name__)
 
-class PluginMeta(abc.ABCMeta):
+class PluginType(abc.ABCMeta):
     
     def __getitem__(cls,name:str):
         return cls.exact_fields_dict[name]
 
-class PluginBase(abc.ABC, metaclass=PluginMeta):
+class PluginBase(abc.ABC, metaclass=PluginType):
     exact_fields_dict = {}
 
     def __init__(self,exact_connection:ExactConnection) -> None:

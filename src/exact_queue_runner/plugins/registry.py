@@ -23,7 +23,8 @@ def __iter_namespace(ns_pkg):
 
 def __register_plugins():
     logger.info('registering plugins')
-    raise RuntimeError()
+    
+    n_registered = 0
     for _ , name, _ in sorted(__iter_namespace(plugins)):
         if not name.startswith('plugin'):
             continue
@@ -33,6 +34,9 @@ def __register_plugins():
             __registered_plugins[name] = mod.plugin
         except Exception as e:
             raise RuntimeError('+++ Unable to activate plugin: '+name) from e
+        n_registered += 1
+    if n_registered <= 0:
+        raise RuntimeError('registered no plugins')
 
 __register_plugins()
 

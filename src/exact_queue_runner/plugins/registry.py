@@ -6,7 +6,7 @@ import logging
 import pkgutil
 import importlib
 
-#from ..  mport plugins
+from .. import plugins
 
 #---Global Vars
 logger = logging.getLogger(__name__)
@@ -24,8 +24,8 @@ logger.debug('in registry package')
 def __load_local_modules():
 
     n_registered = 0
-    for _ , name, _ in sorted(pkgutil.iter_modules(__path__)):
-        if not name.split('.')[-1].startswith('plugin'):
+    for _ , name, _ in sorted(pkgutil.iter_modules(plugins.__path__)):
+        if not name.startswith('plugin'):
             continue
         try:
             logger.info('activating plugin %s',name)

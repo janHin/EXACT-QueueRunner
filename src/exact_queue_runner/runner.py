@@ -39,7 +39,7 @@ def is_valid_job(job:PluginJob)->bool:
     #    return False
 
     if job.attached_worker is not None and (len(job.attached_worker)>0):
-        logger.info('job (%d) already has result attached',job.id)
+        logger.info('job (%d) already has worker attached',job.id)
         return False
     return True
 

@@ -163,7 +163,9 @@ class ExactConnection():
         self._processing_api.partial_update_plugin_job(id=job.id,
             attached_worker=worker, updated_time=datetime.datetime.now())
 
-    def update_job_released(self,job:PluginJob):
+    def update_job_released(self,job_id:PluginJob|int):
         ''''''
-        self._processing_api.partial_update_plugin_job(id=job.id,
+        if isinstance(job_id,PluginJob):
+            job_id = job_id.id
+        self._processing_api.partial_update_plugin_job(id=job_id,
             error_message=None, error_detail=None, attached_worker=None)

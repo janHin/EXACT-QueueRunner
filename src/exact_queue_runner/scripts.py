@@ -95,3 +95,9 @@ def upload_job_results(job_id:int,outdir:Path):
         update_progress_func,outdir)
     plugin_instance.continue_inference(job)
     
+@cli.command()
+@click.argument('job_id',type=int)
+def release_job(job_id:int):
+    ''''''
+    logger.info('releasing job with id %d',job_id)
+    exact_connection.update_job_released(job_id)

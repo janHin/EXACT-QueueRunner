@@ -33,7 +33,7 @@ class PluginBase(abc.ABC):
         self.exact_connection.update_job_progress(job,progress)
 
     @classmethod
-    def __getattribute__(cls,name: str):
+    def __getitem__(cls,name: str):
         return cls.exact_fields_dict[name]
 
     def _cleanup(self):

@@ -37,5 +37,5 @@ def __register_plugins():
 __register_plugins()
 
 def get_plugin_registry()->dict:
-    logger.debug('getting registered plugins')
+    #logger.debug('getting registered plugins')
     return __registered_plugins

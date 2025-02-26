@@ -195,7 +195,7 @@ class HovernetPlugin(Plugin):
                 ' for imageset '+str(imageset))
             raise PluginExcpetion(error_message,error_detail)
 
-        annoclass = annotationtypes_filtered.values()[0]
+        annoclass = list(annotationtypes_filtered.values())[0]
         return annoclass
 
     def _download_image(self,error_exists:bool=True)->Path:

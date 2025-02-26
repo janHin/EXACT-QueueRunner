@@ -32,8 +32,9 @@ class PluginBase(abc.ABC):
     def update_job_progress(self,job:PluginJob,progress:float):
         self.exact_connection.update_job_progress(job,progress)
 
-    def __getattribute__(self, name: str):
-        return self.exact_fields_dict[name]
+    @classmethod
+    def __getattribute__(cls,name: str):
+        return cls.exact_fields_dict[name]
 
     def _cleanup(self):
         logger.info('cleaning up files')

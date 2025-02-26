@@ -16,7 +16,12 @@ from ..exact_connection import ExactConnection
 
 logger = logging.getLogger(__name__)
 
-class PluginBase(abc.ABC):
+class PluginMeta(type):
+    
+    def __getitem__(cls,name:str):
+        return cls.exact_fields_dict[name]
+
+class PluginBase(abc.ABC, metaclass=PluginMeta):
     exact_fields_dict = {}
 
     def __init__(self,exact_connection:ExactConnection) -> None:
@@ -32,9 +37,6 @@ class PluginBase(abc.ABC):
     def update_job_progress(self,job:PluginJob,progress:float):
         self.exact_connection.update_job_progress(job,progress)
 
-    @classmethod
-    def __getitem__(cls,name: str):
-        return cls.exact_fields_dict[name]
 
     def _cleanup(self):
         logger.info('cleaning up files')

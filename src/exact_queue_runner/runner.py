@@ -30,7 +30,7 @@ from exact_sync.v1.rest import ApiException
 
 #local imports
 from .plugins.registry import get_plugin_registry
-from .utils import iter_namespace, get_workername
+from .utils import get_workername
 
 
 logger = logging.getLogger(__name__)

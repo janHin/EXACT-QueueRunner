@@ -140,7 +140,7 @@ class HovernetPlugin(Plugin):
     def _setup_data(self,job:PluginJob,error_image_exists:bool=True):
         logger.info('Retrieving image set for job %d ', job.id)
         self.image = self.apis['images'].retrieve_image(job.image)
-        self.annoationtype = self._get_annotationtype(self.image.imageset)
+        self.annoationtype = self._get_annotationtype(self.image.image_set)
         self.image_file = self._download_image(error_exists=error_image_exists)
 
     def do_inference(self,job:PluginJob):

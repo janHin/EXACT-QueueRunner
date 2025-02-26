@@ -73,7 +73,7 @@ def remove_results(image_name:str,image_set:str):
             exact_connection.destroy_results_for_imageid(image.id)
 
 @cli.command()
-@click.argument('job_id')
+@click.argument('job_id',type=int)
 @click.argument('outdir', type=click.Path(exists=True,path_type=Path))
 def upload_job_results(job_id:int,outdir:Path):
     ''''''

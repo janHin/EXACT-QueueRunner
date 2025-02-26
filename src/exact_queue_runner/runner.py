@@ -198,7 +198,7 @@ class PluginHandler():
         for plugin in self._local_plugins.values():
             if job.plugin == self._exact_plugins[plugin['package']].id:
                 return plugin
-        raise KeyError('no plugin found for job %s',str(job))
+        raise KeyError(f'no plugin found for job {job}')
 
 
 def is_valid_job(job:PluginJob)->bool:

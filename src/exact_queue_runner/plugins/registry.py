@@ -27,7 +27,7 @@ def __register_plugins():
     
     n_registered = 0
     for _ , name, _ in sorted(__iter_namespace(plugins)):
-        if not name.startswith('plugin'):
+        if not name.split('.')[-1].startswith('plugin'):
             continue
         try:
             logger.info('activating plugin %s',name)

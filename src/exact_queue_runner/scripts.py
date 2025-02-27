@@ -47,7 +47,7 @@ def cli():
 @click.option("--idlelimit",type=float,help="idle time limit in seconds",default=-1.)
 @click.option("--outdir",default=None,type=click.Path(exists=True,path_type=Path),
     help='path to save results to')
-@click.option("--keep_inputs",flag=True,help='indicate if input (e.g. images)'
+@click.option("--keep_inputs",is_flag=True,help='indicate if input (e.g. images)'
     'should be kept')
 def run(joblimit:int,restart:bool,idlelimit:float,outdir:Path,keep_inputs:bool):
     '''Start an Exact Queue Runner worker'''

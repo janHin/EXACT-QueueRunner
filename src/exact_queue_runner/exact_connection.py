@@ -76,7 +76,7 @@ class ExactConnection():
             return False
 
         if job.processing_complete >= 100:
-            logger.warning('job (%d) already has progress 100\%',job.id)
+            logger.warning('job (%d) already has progress 100%%',job.id)
             return False
 
         #if job.result is not None:

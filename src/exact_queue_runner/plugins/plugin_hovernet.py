@@ -240,7 +240,7 @@ class HovernetPlugin(PluginBase):
         for n, key in enumerate(tqdm(inference_results,desc='Uploading annotations')):
 
             if (n%UPDATE_STEPS == 0):
-               self.update_progress_func (90+10*(n/len(inference_results))) # 90.100% are for upload
+               self.exact_connection.update_job_progress(job,90+10*(n/len(inference_results)))
 
             line = inference_results[key]
             predcoords, score = line["box"], line["prob"],

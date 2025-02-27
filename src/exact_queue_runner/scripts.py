@@ -86,13 +86,12 @@ def upload_job_results(job_id:int,outdir:Path):
     plugin_handler = PluginHandler(exact_connection)
 
     job = exact_connection.retrieve_job(job_id)
-    plugin_dict = plugin_handler.get_plugin_for_job(job)
+    plugin_type = plugin_handler.get_plugin_for_job(job)
 
     def update_progress_func(progress:float):
         exact_connection.update_job_progress(job,progress)
 
-    plugin_instance = plugin_dict['class'](exact_connection.api_dict,
-        update_progress_func,outdir)
+    plugin_instance = plugin_type(exact_connection,outdir)
     plugin_instance.continue_inference(job)
     
 @cli.command()

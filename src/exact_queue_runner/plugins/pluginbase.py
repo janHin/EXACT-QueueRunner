@@ -51,7 +51,7 @@ class PluginBase(abc.ABC, metaclass=PluginType):
     def _cleanup(self):
         logger.info('cleaning up files')
         for path in self._unlinklist:
-            if isinstance(str,path):
+            if isinstance(path,str):
                 path = Path(path)
             logger.debug('deleting path %s',str(path))
             path.unlink(missing_ok=True)

@@ -67,21 +67,47 @@ class ExactConnection():
         job = self._processing_api.retrieve_plugin_job(job_id)
         return job
 
-    def get_next_job(self)->PluginJob:
-        ''''''
-        jobs=self._processing_api.list_plugin_jobs(limit=1e3).results
-        # Only work on jobs that are not already completed or failed with an error
-        unprocessed_jobs = [job for job in jobs if job.processing_complete != 100]
-        logger.info('Job queue contains %d unprocessed jobs',len(unprocessed_jobs))
+    @staticmethod
+    def is_valid_job(job:PluginJob)->bool:
 
-        for job in unprocessed_jobs:
-            # Get update about job
-            #try:
-            self.retrieve_job(job.id)
-            #except:
-            #    logger.warning('Job %d unexpectedly removed from queue: ',job.id)
-            #    continue
-            return job
+        if job.error_message:
+            logger.warning('job (%d) has error: %s \n continuing',job.id,
+                str(job.error_message))
+            return False
+
+        if job.processing_complete >= 100:
+            logger.warning('job (%d) already has progress 100\%',job.id)
+            return False
+
+        #if job.result is not None:
+        #    logger.info('job (%d) already has result attached',job.id)
+        #    return False
+
+        if job.attached_worker is not None and (len(job.attached_worker)>0):
+            logger.info('job (%d) already has worker attached',job.id)
+            return False
+    
+        return True
+
+
+    def get_next_job(self,timeout:float=120)->PluginJob:
+        ''''''
+        start_time = datetime.datetime.now()
+        while True:
+            jobs=self._processing_api.list_plugin_jobs(limit=1e3).results
+            # Only work on jobs that are not already completed or failed with an error
+            logger.info('received %d jobs from server',len(jobs))
+            
+            try:
+                job = next(filter(ExactConnection.is_valid_job,jobs))
+                self.retrieve_job(job.id)
+                return job
+            except StopIteration:
+                pass
+            seconds_passed = (datetime.datetime.now() - start_time).seconds
+            if seconds_passed > timeout:
+                raise TimeoutError('timeout while looking for new jobs')
+            
         return None
 
     def destroy_job(self,job_id:int):

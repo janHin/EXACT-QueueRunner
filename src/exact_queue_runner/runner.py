@@ -27,22 +27,6 @@ from .plugin_handler import PluginHandler
 logger = logging.getLogger(__name__)
 
 
-def is_valid_job(job:PluginJob)->bool:
-
-    if job.error_message:
-        logger.warning('job (%d) has error: %s \n continuing',job.id,
-            str(job.error_message))
-        return False
-
-    #if job.result is not None:
-    #    logger.info('job (%d) already has result attached',job.id)
-    #    return False
-
-    if job.attached_worker is not None and (len(job.attached_worker)>0):
-        logger.info('job (%d) already has worker attached',job.id)
-        return False
-    return True
-
 def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
         worker_name:str,outdir:Path,keep_inputs:bool)->bool:
     ''''''
@@ -51,11 +35,11 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
 
     if job is None:
         logger.info("no job returned by get_job()")
-        return None
+        raise RuntimeError('no job received')
 
-    if not is_valid_job(job):
-        logger.info("job %s not valid",str(job.id))
-        return False
+    # if not is_valid_job(job):
+    #     logger.info("job %s not valid",str(job.id))
+    #     return False
 
     plugin_type = plugin_handler.get_plugin_for_job(job)
 

@@ -12,17 +12,19 @@ from tqdm import tqdm
 import numpy as np
 
 #exact imports
-from exact_sync.v1.models import PluginResultAnnotation, PluginResult, PluginResultEntry, Plugin, PluginJob
+from exact_sync.v1.models import (PluginResultAnnotation, PluginResult,
+    PluginResultEntry, Plugin, PluginJob)
 
 #local imports
 from .utils.nms_WSI import non_max_suppression_by_distance
 from .utils.object_detection_helper import create_anchors
 from .utils.inference_utils import DetectionInference
 from .utils.models.RetinaNet import RetinaNetDA
-
+from .pluginbase import PluginBase
+from .utils.exception import PluginExcpetion
+from .registry import registerplugin
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
-
 
 class MIDOG22Inference(DetectionInference):
     def __init__(self, **kwargs) -> None:
@@ -196,14 +198,22 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         return True
 
 
-plugin = {  'name':'MIDOG 2022 Mitosis Domain Adversarial Baseline',
-            'author':'Frauke Wilm / Marc Aubreville', 
-            'package':'science.imig.midog2022.baseline-da', 
-            'contact':'marc.aubreville@thi.de', 
-            'abouturl':'https://github.com/DeepPathology/EXACT-QueueRunner/', 
-            'icon':'QueueRunner/handlers/logos/midog2022_logo.png',
-            'products':[],
-            'results':[],
-            'inference_func' : inference}
+@registerplugin({
+    'name':'MIDOG 2022 Mitosis Domain Adversarial Baseline',
+    'author':'Frauke Wilm / Marc Aubreville', 
+    'package':'science.imig.midog2022.baseline-da', 
+    'contact':'marc.aubreville@thi.de', 
+    'abouturl':'https://github.com/DeepPathology/EXACT-QueueRunner/', 
+    'icon':'QueueRunner/handlers/logos/midog2022_logo.png',
+    'products':[],
+    'results':[],
+})
+class PluginMIDO2022(PluginBase):
 
-
+    def do_inference(self, job: PluginJob):
+        def update_progress_func(progress):
+            self.exact_connection.update_job_progress(job,progress)
+        success = inference(self.apis,job,update_progress_func)
+        if not success:
+            raise PluginExcpetion('error running plugin PluginSegementationCATCH',
+                'error in inference function')

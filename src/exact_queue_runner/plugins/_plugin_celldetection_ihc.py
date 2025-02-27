@@ -20,12 +20,13 @@ from .utils.nms_WSI import non_max_suppression_by_distance
 from .utils.object_detection_helper import create_anchors
 from .utils.inference_utils import DetectionInference
 from .utils.models.RetinaNet import RetinaNet
-
+from .pluginbase import PluginBase
+from .utils.exception import PluginExcpetion
+from .registry import registerplugin
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during
                   # upload (stage1 and stage2 updates are configured in the 
                   # respective files)
-
 
 class LymphocyteInference(DetectionInference):
     def __init__(self, **kwargs) -> None:
@@ -202,12 +203,22 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         
         return True
 
-plugin = {  'name':'Cell Detection',
-            'author':'Frauke Wilm', 
-            'package':'science.imig.cell-det', 
-            'contact':'frauke.wilm@fau.de', 
-            'abouturl':'https://github.com/DeepMicroscopy/CD3-Detection', 
-            'icon':'QueueRunner/handlers/logos/lymphocytes_logo.png',
-            'products':[],
-            'results':[],
-            'inference_func' : inference}
+@registerplugin({
+    'name':'Cell Detection',
+    'author':'Frauke Wilm', 
+    'package':'science.imig.cell-det', 
+    'contact':'frauke.wilm@fau.de', 
+    'abouturl':'https://github.com/DeepMicroscopy/CD3-Detection', 
+    'icon':'QueueRunner/handlers/logos/lymphocytes_logo.png',
+    'products':[],
+    'results':[],
+})
+class PluginCellDetection(PluginBase):
+
+    def do_inference(self, job: PluginJob):
+        def update_progress_func(progress):
+            self.exact_connection.update_job_progress(job,progress)
+        success = inference(self.apis,job,update_progress_func)
+        if not success:
+            raise PluginExcpetion('error running plugin PluginSegementationCATCH',
+                'error in inference function')

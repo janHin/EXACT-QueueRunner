@@ -17,6 +17,7 @@ from .utils.inference_utils import DetectionInference
 from .utils.exception import PluginExcpetion
 from .registry import registerplugin
 from .pluginbase import PluginBase
+from ..exact_connection import ExactConnection
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
@@ -93,26 +94,23 @@ class NucleusInference(DetectionInference):
 )
 class HovernetPlugin(PluginBase):
 
-    def __init__(self, apis: dict,outdir:Path) -> None:
-        super().__init__(apis)
+    def __init__(self,exact_connection:ExactConnection,outdir:Path=None,
+            keep_inputs:bool=False,**kwargs) -> None:
+        super().__init__(exact_connection,outdir,**kwargs)
 
-        if outdir is None:
-            outdir = Path.cwd() / 'QueueRunner/tmp'
-            if not outdir.is_dir():
-                outdir.mkdir(parents=True)
-
-        self.outdir = outdir
-
-        self.annoationtype = None        
+        self.annoationtype = None
         self.image         = None
         self.image_file    = None
-
+        self._keep_inputs  = keep_inputs
 
     def _setup_data(self,job:PluginJob,error_image_exists:bool=True):
         logger.info('Retrieving image set for job %d ', job.id)
         self.image = self.apis['images'].retrieve_image(job.image)
         self.annoationtype = self._get_annotationtype(self.image.image_set)
         self.image_file = self._download_image(error_exists=error_image_exists)
+
+        if not self._keep_inputs:
+            self.unlink_path(self.image_file)
 
     def do_inference(self,job:PluginJob):
         self.update_job_progress(job,0.01)

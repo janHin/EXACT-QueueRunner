@@ -44,13 +44,16 @@ def cli():
 @cli.command()
 @click.option("--joblimit",type=int,default=-1,help="maximum number of jobs")
 @click.option("--restart",is_flag=True,help="restart upon error")
-@click.option("--idlelimit",help="idle time limit in seconds",default=-1)
-@click.option("--outdir",default=None,type=click.Path(exists=True,path_type=Path))
-def run(joblimit:int,restart:bool,idlelimit:float,outdir:Path):
-    '''Command line interface'''
-    logger.info('Starting up queue_handler %s',str(__version__))
-
-    run_loop(exact_connection,joblimit,restart,idlelimit,outdir=outdir)
+@click.option("--idlelimit",type=float,help="idle time limit in seconds",default=-1.)
+@click.option("--outdir",default=None,type=click.Path(exists=True,path_type=Path),
+    help='path to save results to')
+@click.option("--keep_inputs",flag=True,help='indicate if input (e.g. images)'
+    'should be kept')
+def run(joblimit:int,restart:bool,idlelimit:float,outdir:Path,keep_inputs:bool):
+    '''Start an Exact Queue Runner worker'''
+    logger.info('Starting up exact_ queue_runner %s',str(__version__))
+    run_loop(exact_connection,joblimit,restart,idlelimit,outdir=outdir,
+        keep_inputs=keep_inputs)
 
 @cli.command()
 @click.argument("job_id",type=int)

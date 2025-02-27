@@ -43,33 +43,12 @@ def is_valid_job(job:PluginJob)->bool:
         return False
     return True
 
-# def process_job(exact_connection:ExactConnection,job:PluginJob,plugin,
-#     outdir:Path)->bool:
-#     '''
-#     '''
-
-#     def update_progress(progress:float):
-#         exact_connection.update_job_progress(job,progress)
-
-#     try:
-#         success = plugin['inference_func'](apis=exact_connection.api_dict, job=job,
-#             update_progress=update_progress,outdir=outdir)
-#         if not success:
-#             raise RuntimeError(f'encountered error running plugin {plugin["name"]}')
-#     except Exception as e:
-#         logger.error('encountered error (%s) running inference_func'
-#             ' for %s',str(e),plugin['name'])
-#         exact_connection.update_job_exception(job,e)
-#         raise e
-
-   
-
 def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
-        worker_name:str,outdir:Path)->bool:
+        worker_name:str,outdir:Path,keep_inputs:bool)->bool:
     ''''''
 
     job = exact_connection.get_next_job()
-    
+
     if job is None:
         logger.info("no job returned by get_job()")
         return None
@@ -85,46 +64,40 @@ def do_run(exact_connection:ExactConnection,plugin_handler:PluginHandler,
             str(job.id),str(job.plugin))
         return False
 
-    plugin_instance = plugin_type(exact_connection,outdir)
+    plugin_instance = plugin_type(exact_connection,outdir,keep_inputs)
 
     logger.info('Job %s: Last update for this job was: %s seconds ago',
         str(job.id),
         str((datetime.datetime.now()-job.updated_time).seconds))
-    
+
     logger.info('Job %s: Attached worker info: %s',str(job.id),
         str(job.attached_worker))
     logger.info('Job %d: Claiming job.',job.id)
-    
+
     exact_connection.update_job_worker(job,worker_name)
 
     # re-check if we got the job after a random time below 1 second
     time.sleep(random.random())
     job = exact_connection._processing_api.retrieve_plugin_job(id=job.id)
-        
+
     if (job.attached_worker != worker_name):
         logger.info('There was a conflict. Worker %s got the job finally',
             str(job.attached_worker))
         return False
-    
+
     logger.info('Claiming was: %.2f seconds ago.',
         (datetime.datetime.now()-job.updated_time).seconds)
     logger.info('Successfully claimed job %d', job.id)
 
-    try:
-        plugin_instance.inference(job)
-        #process_job(exact_connection,job,plugin,outdir)
-        exact_connection.update_job_progress(job,100.0)
-        exact_connection.update_job_released(job)
-    except Exception as e:
-
-        raise e from e
-        
-
+    plugin_instance.inference(job)
+    #process_job(exact_connection,job,plugin,outdir)
+    exact_connection.update_job_progress(job,100.0)
     logger.info('unclaiming job %d', job.id)
-    # Break for loop to achieve refreshing of jobs list
+    exact_connection.update_job_released(job)
 
 def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
-    restart:bool=True,idle_limit:float=-1,outdir:Path=None):
+    restart:bool=True,idle_limit:float=-1,outdir:Path=None,
+    keep_inputs:bool=False):
 
     time.sleep(np.random.randint(5))
 
@@ -139,7 +112,7 @@ def run_loop(exact_connection:ExactConnection,job_limit:int=-1,
 
     try:
         while (True):
-            do_run(exact_connection,plugin_handler,worker_name,outdir)
+            do_run(exact_connection,plugin_handler,worker_name,outdir,keep_inputs)
 
             n_jobs += 1
 

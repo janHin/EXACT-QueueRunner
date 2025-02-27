@@ -17,7 +17,9 @@ from exact_sync.v1.models import PluginResultBitmap, PluginResult, PluginResultE
 
 #local imports
 from .utils.inference_utils import SegmentationInference
-
+from .pluginbase import PluginBase
+from .utils.exception import PluginExcpetion
+from .registry import registerplugin
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during 
                   # upload (stage1 and stage2 updates are configured in 
@@ -159,7 +161,8 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         return True
 
 
-plugin = {  'name':'CATCH segmentation baseline',
+@registerplugin(
+    {  'name':'CATCH segmentation baseline',
             'author':'Frauke Wilm', 
             'package':'science.imig.catch', 
             'contact':'frauke.wilm@fau.de', 
@@ -167,6 +170,13 @@ plugin = {  'name':'CATCH segmentation baseline',
             'icon':'QueueRunner/handlers/logos/catch_logo.jpg',
             'products':[],
             'results':[],
-            'inference_func' : inference}
+})
+class PluginSegmentationCATCH(PluginBase):
 
-
+    def do_inference(self, job: PluginJob):
+        def update_progress_func(progress):
+            self.exact_connection.update_job_progress(job,progress)
+        success = inference(self.apis,job,update_progress_func)
+        if not success:
+            raise PluginExcpetion('error running plugin PluginSegementationCATCH',
+                'error in inference function')

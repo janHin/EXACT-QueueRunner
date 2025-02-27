@@ -24,9 +24,19 @@ class PluginType(abc.ABCMeta):
 class PluginBase(abc.ABC, metaclass=PluginType):
     exact_fields_dict = {}
 
-    def __init__(self,exact_connection:ExactConnection) -> None:
+    def __init__(self,exact_connection:ExactConnection,
+        outdir:Path=None,**kwargs) -> None:
         super().__init__()
         self.exact_connection = exact_connection
+
+        if outdir is None:
+            outdir = Path.cwd() / 'QueueRunner/tmp'
+            if not outdir.is_dir():
+                outdir.mkdir(parents=True)
+        self.outdir = outdir
+
+
+        #Legacy
         self.apis = exact_connection.api_dict
         #self.update_progress_func = update_progress
 

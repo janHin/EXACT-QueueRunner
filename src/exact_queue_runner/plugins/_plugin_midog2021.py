@@ -20,6 +20,9 @@ from .utils.nms_WSI import non_max_suppression_by_distance
 from .utils.object_detection_helper import create_anchors
 from .utils.inference_utils import DetectionInference
 from .utils.models.RetinaNet import RetinaNetDA
+from .pluginbase import PluginBase
+from .utils.exception import PluginExcpetion
+from .registry import registerplugin
 
 UPDATE_STEPS = 10 # after how many steps will we update the progress bar during upload (stage1 and stage2 updates are configured in the respective files)
 
@@ -195,15 +198,22 @@ def inference(apis:dict, job:PluginJob, update_progress:Callable, **kwargs):
         
         return True
 
+@registerplugin({
+    'name':'MIDOG 2021 baseline / 0.4 threshold',
+    'author':'Frauke Wilm / Marc Aubreville', 
+    'package':'science.imig.midog2021.baseline-da-lowthr', 
+    'contact':'marc.aubreville@thi.de', 
+    'abouturl':'https://github.com/DeepPathology/MIDOG_reference_docker', 
+    'icon':'QueueRunner/handlers/logos/midog2021_logo.jpg',
+    'products':[],
+    'results':[],
+})
+class PluginMIDO2021(PluginBase):
 
-plugin = {  'name':'MIDOG 2021 baseline / 0.4 threshold',
-            'author':'Frauke Wilm / Marc Aubreville', 
-            'package':'science.imig.midog2021.baseline-da-lowthr', 
-            'contact':'marc.aubreville@thi.de', 
-            'abouturl':'https://github.com/DeepPathology/MIDOG_reference_docker', 
-            'icon':'QueueRunner/handlers/logos/midog2021_logo.jpg',
-            'products':[],
-            'results':[],
-            'inference_func' : inference}
-
-
+    def do_inference(self, job: PluginJob):
+        def update_progress_func(progress):
+            self.exact_connection.update_job_progress(job,progress)
+        success = inference(self.apis,job,update_progress_func)
+        if not success:
+            raise PluginExcpetion('error running plugin PluginSegementationCATCH',
+                'error in inference function')
